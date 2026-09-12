@@ -12,7 +12,7 @@ const supabase = createClient(
 export function StatsDashboard() {
   const { isConnected, address } = useAppKitAccount()
   const [totalRaised, setTotalRaised] = useState<number>(0)
-  const [userTransactions, setUserTransactions] = useState<Record<string, unknown>[]>([])
+  const [userTransactions, setUserTransactions] = useState<{ amount: number; chain: string; status: string; created_at: string }[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
