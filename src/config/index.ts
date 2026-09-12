@@ -24,6 +24,12 @@ import { SolanaAdapter } from "@reown/appkit-adapter-solana";
 
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 
+if (!projectId) {
+  throw new Error("NEXT_PUBLIC_PROJECT_ID is not defined");
+}
+
+export { projectId };
+
 export const bitcoinNetworks: [AppKitNetwork, ...AppKitNetwork[]] = [
   bitcoin,
   bitcoinTestnet,
@@ -65,8 +71,4 @@ export const wagmiAdapter = new WagmiAdapter({
   ssr: true,
 });
 
-export const solanaAdapter = new SolanaAdapter({
-  projectId,
-  networks: solanaNetworks,
-  ssr: true,
-});
+export const solanaAdapter = new SolanaAdapter();

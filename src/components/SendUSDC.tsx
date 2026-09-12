@@ -213,7 +213,8 @@ export function SendUSDC() {
           <input 
             type="number" 
             step="any"
-            placeholder="0.00" 
+            min="5"
+            placeholder="Min $5 USDC" 
             value={amount} 
             onChange={(e) => {
               setAmount(e.target.value)
