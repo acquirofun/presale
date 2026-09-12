@@ -22,11 +22,7 @@ import { BitcoinAdapter } from "@reown/appkit-adapter-bitcoin";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { SolanaAdapter } from "@reown/appkit-adapter-solana";
 
-export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
-
-if (!projectId) {
-  throw new Error("Project ID is not defined");
-}
+export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID || "";
 
 export const bitcoinNetworks: [AppKitNetwork, ...AppKitNetwork[]] = [
   bitcoin,
@@ -61,18 +57,14 @@ export const networks = [
 ];
 
 // Set up Adapters
-export const bitcoinAdapter = new BitcoinAdapter({
-  projectId,
-});
+export const bitcoinAdapter = new BitcoinAdapter();
 
 export const wagmiAdapter = new WagmiAdapter({
-  projectId,
   networks: evmNetworks,
   ssr: true,
 });
 
 export const solanaAdapter = new SolanaAdapter({
-  projectId,
   networks: solanaNetworks,
   ssr: true,
 });

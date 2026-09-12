@@ -18,10 +18,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import { SupabaseStorage } from "@/config/siwx-storage";
 
-if (!projectId) {
-  throw new Error("Project ID is not defined");
-}
-
 // Set up metadata
 const metadata = {
   name: "next-reown-appkit",
@@ -40,12 +36,12 @@ const allNetworks: [AppKitNetwork, ...AppKitNetwork[]] = [
 // Create the modal with all 3 adapters
 export const modal = createAppKit({
   adapters: [bitcoinAdapter, wagmiAdapter, solanaAdapter],
-  projectId,
+  projectId: projectId || "",
   networks: allNetworks,
   metadata,
   themeMode: "dark",
   features: {
-    analytics: true, 
+    analytics: true,
     socials: [],
     email: false,
   },
