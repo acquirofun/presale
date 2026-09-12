@@ -109,6 +109,7 @@ export function CountdownTimer() {
         0% Complete
       </div>
     </div>
+    )
   }
 
   return (
