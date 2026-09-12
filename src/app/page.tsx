@@ -1,5 +1,4 @@
 import { Header } from "@/components/Header";
-import { ConnectButton } from "@/components/ConnectButton";
 import { ActionButtonList } from "@/components/ActionButtonList";
 import { SendUSDC } from "@/components/SendUSDC";
 import { UserCredits } from "@/components/UserCredits";
@@ -7,7 +6,6 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { OfferInfo } from "@/components/OfferInfo";
 import { ValueDisplay } from "@/components/ValueDisplay";
 import { StatsDashboard } from "@/components/StatsDashboard";
-import Image from "next/image";
 
 export default function Home() {
   return (

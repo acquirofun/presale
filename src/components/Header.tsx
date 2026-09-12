@@ -50,7 +50,7 @@ export function Header() {
             alt="Logo" 
             width={40} 
             height={40}
-            style={{ borderRadius: '8px' }}
+            style={{ borderRadius: '50%' }}
           />
           <span style={{ 
             fontSize: '1.25rem', 
@@ -60,16 +60,13 @@ export function Header() {
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text'
           }}>
-            Multichain
+            PointSwap
           </span>
         </div>
         
         <nav style={{ display: 'flex', gap: 'var(--spacing-lg)' }}>
           <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
             Referral
-          </a>
-          <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
-            Stake
           </a>
           <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
             Stats

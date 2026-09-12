@@ -51,7 +51,7 @@ export function CountdownTimer() {
         PRESALE IS LIVE
       </h2>
       <p className="text-center text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>
-        BUY IT OR MISS IT! <br/>The presale ends on 15/10/2026 at 11:59pm GMT. Don't miss your chance to be part of this exclusive opportunity.
+        BUY IT OR MISS IT! <br/>The presale ends on 15/10/2026 at 11:59pm GMT. Don&apos;t miss your chance to be part of this exclusive opportunity.
       </p>
       
       <div className="countdown-grid" style={{ 

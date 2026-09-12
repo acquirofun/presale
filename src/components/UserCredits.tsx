@@ -27,7 +27,7 @@ export function UserCredits() {
       }
 
       setLoading(true)
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('user_credits')
         .select('credits')
         .eq('wallet_address', activeAddress)
@@ -78,7 +78,7 @@ export function UserCreditsSimple() {
       }
 
       setLoading(true)
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('user_credits')
         .select('credits')
         .eq('wallet_address', activeAddress)

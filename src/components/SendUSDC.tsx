@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useWriteContract, useAccount } from 'wagmi'
 import { parseUnits } from 'viem'
-import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react'
+import { useAppKitAccount } from '@reown/appkit/react'
 import { createClient } from '@supabase/supabase-js'
 import { calculateCurrentRate } from '@/utils/rateCalculator'
 import { ConnectButton } from '@/components/ConnectButton'
@@ -67,13 +67,11 @@ export function SendUSDC() {
   const { address, chainId, isConnected } = useAccount()
   const { caipAddress } = useAppKitAccount()
   const { writeContractAsync, isPending } = useWriteContract()
-  const { walletProvider } = useAppKitProvider('solana')
 
   const [amount, setAmount] = useState('')
   const [currentRate, setCurrentRate] = useState(calculateCurrentRate().currentRate)
   const [referralCode, setReferralCode] = useState('')
   const [currentStep, setCurrentStep] = useState(1)
-  const [isSolanaPending, setIsSolanaPending] = useState(false)
   const isSolana = caipAddress?.startsWith('solana')
 
   useEffect(() => {
@@ -143,7 +141,7 @@ export function SendUSDC() {
         alert(`Transaction sent successfully! Hash: ${hash}\nYou earned ${earned.toLocaleString()} credits!`)
         setAmount('')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Transfer failed:', error)
       
       // Log failure in Supabase

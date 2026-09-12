@@ -92,6 +92,16 @@ export function ValueDisplay() {
           Based on moon price of ${moonPrice}
         </div>
       </div>
+
+      <div className="value-card" style={{ background: 'linear-gradient(135deg, #ff2200ee 0%, #f5b30b 100%)', color: '#000' }}>
+        <div className="value-label">Refer & Earn</div>
+        <div className="value-amount">
+          <p>30% credits!</p>
+        </div>
+        <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+          Let's grow together! Share your referral link and earn extra credits when your friends join.
+        </div>
+      </div>
     </div>
   )
 }
