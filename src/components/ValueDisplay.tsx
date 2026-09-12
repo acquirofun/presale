@@ -99,7 +99,7 @@ export function ValueDisplay() {
           <p>30% credits!</p>
         </div>
         <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-          Let's grow together! Share your referral link and earn extra credits when your friends join.
+          Let&apos;s grow together! Share your referral link and earn extra credits when your friends join.
         </div>
       </div>
     </div>
