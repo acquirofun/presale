@@ -65,11 +65,14 @@ export function Header() {
         </div>
         
         <nav style={{ display: 'flex', gap: 'var(--spacing-lg)' }}>
-          <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
-            Referral
+          <a href="/home" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
+            Home
           </a>
-          <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
-            Stats
+          <a href="/dashboard" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
+            Dashboard
+          </a>
+          <a href="/referral" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
+            Referral
           </a>
         </nav>
       </div>

@@ -93,7 +93,7 @@ export function ValueDisplay() {
         </div>
       </div>
 
-      <div className="value-card" style={{ background: 'linear-gradient(135deg, #032659ee 100%, #2c005e 100%)', color: '#fff' }}>
+      <div className="value-card" style={{ background: '#DF301C', color: '#000' }}>
         <div className="value-label">Refer & Earn</div>
         <div className="value-amount">
           <p>30% credits!</p>

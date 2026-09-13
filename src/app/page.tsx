@@ -1,47 +1,12 @@
-import { Header } from "@/components/Header";
-import { ActionButtonList } from "@/components/ActionButtonList";
-import { SendUSDC } from "@/components/SendUSDC";
-import { UserCredits } from "@/components/UserCredits";
-import { CountdownTimer } from "@/components/CountdownTimer";
-import { OfferInfo } from "@/components/OfferInfo";
-import { ValueDisplay } from "@/components/ValueDisplay";
-import { StatsDashboard } from "@/components/StatsDashboard";
+
+
 
 export default function Home() {
   return (
-    <div className="pages">
-      <Header />
-      
-      <div className="container" style={{ marginTop: 'var(--spacing-xl)' }}>
-        {/* Hero Section with Countdown */}
-        <div className="card mb-lg">
-          <CountdownTimer />
-        </div>
-
-        {/* Value Display Section */}
-        <ValueDisplay />
-
-        {/* Stats Dashboard */}
-        <StatsDashboard />
-
-        {/* Network Actions */}
-        <div className="card mb-lg">
-          <ActionButtonList />
-        </div>
-
-        {/* Offer Info */}
-        <OfferInfo />
-
-        {/* Send USDC Widget */}
-        <div className="card mb-lg">
-          <SendUSDC />
-        </div>
-
-        {/* User Credits (still show for detailed view) */}
-        <div className="card">
-          <UserCredits />
-        </div>
-      </div>
+    <div style={{ margin: '30% auto 0px' , textAlign: 'center', padding: 'var(--spacing-xl)', fontSize: '1.25rem', fontWeight: '500'}}>
+      Want to start the journey? Click the button below to connect your wallet and begin your adventure!
+      <br/>
+      <a href = '/home'><button style={{ marginTop: 'var(--spacing-lg)', height: '40px', width: '120px', fontWeight: '700' }}>Let's Go!</button></a>
     </div>
   );
 }
