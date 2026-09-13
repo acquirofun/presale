@@ -6,10 +6,16 @@ import { useAccount } from 'wagmi'
 import { useAppKitAccount } from '@reown/appkit/react'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://kifydthslaqeqmohvetb.supabase.co"
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "sb_publishable_gPldRZjoctXxbEuEmy1GjA_EjzSLjqk"
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY 
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_KEY environment variable.'
+  )
+}
+
+const supabase = createClient(supabaseUrl , supabaseKey)
 
 export function ReferralCodeGenerator() {
   const { address: evmAddress } = useAccount()
@@ -134,11 +140,31 @@ export function ReferralCodeGenerator() {
       }
 
       setReferralCode(newCode)
-    } catch (error: any) {
-      console.error('Failed to generate referral code:', error)
-      const errorMsg = error?.message || error?.details || (typeof error === 'string' ? error : JSON.stringify(error))
-      alert(`Failed to generate referral code: ${errorMsg}`)
-    } finally {
+    } catch (error: unknown) {
+  console.error('Failed to generate referral code:', error)
+
+  let errorMsg = 'An unexpected error occurred.'
+
+  if (error instanceof Error) {
+    errorMsg = error.message
+  } else if (typeof error === 'string') {
+    errorMsg = error
+  } else if (error && typeof error === 'object') {
+    const errorObject = error as {
+      message?: string
+      details?: string
+      hint?: string
+    }
+
+    errorMsg =
+      errorObject.message ||
+      errorObject.details ||
+      errorObject.hint ||
+      'An unexpected error occurred.'
+  }
+
+  alert(`Failed to generate referral code: ${errorMsg}`)
+} finally {
       setLoading(false)
     }
   }
