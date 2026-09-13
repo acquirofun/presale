@@ -12,13 +12,14 @@ const supabase = createClient(
 export function StatsDashboard() {
   const { isConnected, address } = useAppKitAccount()
   const [totalRaised, setTotalRaised] = useState<number>(0)
-  const [userTransactions, setUserTransactions] = useState<{ amount: number; chain: string; status: string; created_at: string }[]>([])
+  const [userTransactions, setUserTransactions] = useState<{ amount: number; chain: string; status: string; created_at: string; referral_bonus_points: number }[]>([])
+  const [referralEarnings, setReferralEarnings] = useState<number>(0)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     async function fetchStats() {
       setLoading(true)
-      
+
       // Fetch total USDC raised across all users
       const { data: allTxData } = await supabase
         .from('transactions')
@@ -42,6 +43,15 @@ export function StatsDashboard() {
         if (userTxData) {
           setUserTransactions(userTxData)
         }
+
+        // Fetch user's referral earnings
+        const { data: earningsData } = await supabase
+          .from('referral_earnings')
+          .select('earned_points')
+          .eq('referrer_wallet_address', address.toLowerCase())
+
+        const totalPoints = earningsData?.reduce((sum, earning) => sum + earning.earned_points, 0) || 0
+        setReferralEarnings(totalPoints)
       }
 
       setLoading(false)
@@ -51,7 +61,7 @@ export function StatsDashboard() {
   }, [isConnected, address])
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-lg)' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-lg)' }}>
       {/* Total Raised Card */}
       <div className="card">
         <h3 className="text-center">Total Raised</h3>
@@ -60,6 +70,17 @@ export function StatsDashboard() {
         </div>
         <div className="text-center text-muted" style={{ fontSize: '0.875rem' }}>
           USDC
+        </div>
+      </div>
+
+      {/* Referral Earnings Card */}
+      <div className="card">
+        <h3 className="text-center">Referral Earnings</h3>
+        <div className="text-center" style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--primary)' }}>
+          {loading ? '...' : referralEarnings.toLocaleString()}
+        </div>
+        <div className="text-center text-muted" style={{ fontSize: '0.875rem' }}>
+          Points
         </div>
       </div>
 
@@ -91,6 +112,11 @@ export function StatsDashboard() {
                 <div>
                   <div style={{ fontSize: '0.875rem', fontWeight: '600' }}>
                     {tx.amount} USDC
+                    {tx.referral_bonus_points > 0 && (
+                      <span className="text-success" style={{ marginLeft: '4px', fontSize: '0.75rem' }}>
+                        (+{tx.referral_bonus_points} bonus)
+                      </span>
+                    )}
                   </div>
                   <div className="text-muted" style={{ fontSize: '0.75rem' }}>
                     {tx.chain}

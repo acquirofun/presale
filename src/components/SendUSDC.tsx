@@ -37,8 +37,8 @@ const EVM_DESTINATION = '0x3B641788F43ECDEdA6177AD26aE53fBb5D9566E6'
 const SOLANA_DESTINATION = 'Cs56FWXW2Wa9yZg8B6kDHjHixLbLNrYmGZ2YRN6HVPBa'
 
 // Helper function to update credits in Supabase
-async function awardCredits(walletAddress: string, usdcAmount: number, rate: number) {
-  const creditsEarned = Math.floor(usdcAmount * rate)
+async function awardCredits(walletAddress: string, usdcAmount: number, rate: number, bonusPoints: number = 0) {
+  const creditsEarned = Math.floor(usdcAmount * rate) + bonusPoints
   const cleanAddress = walletAddress.toLowerCase()
 
   // Fetch current credits
@@ -96,6 +96,35 @@ export function SendUSDC() {
       return
     }
 
+    // Validate referral code if provided
+    let referralValidation: { is_valid: boolean; referrer_wallet: string; error_message: string } | null = null
+    let referrerWallet: string | null = null
+
+    if (referralCode.trim()) {
+      try {
+        const { data: validation, error } = await supabase
+          .rpc('validate_referral_code', {
+            code: referralCode.trim(),
+            user_wallet: address
+          })
+
+        if (error) throw error
+
+        referralValidation = validation?.[0]
+
+        if (!referralValidation?.is_valid) {
+          alert(referralValidation?.error_message || 'Invalid referral code')
+          return
+        }
+
+        referrerWallet = referralValidation.referrer_wallet
+      } catch (error) {
+        console.error('Referral validation failed:', error)
+        alert('Failed to validate referral code. Please try again.')
+        return
+      }
+    }
+
     try {
       if (isSolana) {
         // DISABLED: Solana transactions require proper implementation to prevent security exploit
@@ -111,6 +140,10 @@ export function SendUSDC() {
 
         const parsedAmount = parseUnits(amount, tokenConfig.decimals)
 
+        // Calculate base points and bonus
+        const basePoints = Math.floor(numericAmount * currentRate)
+        const bonusPoints = referrerWallet ? Math.floor(basePoints * 0.10) : 0 // 10% bonus for referred user
+
         // 1. Log as PENDING initially
         const { data: insertData } = await supabase.from('transactions').insert({
           sender_address: address.toLowerCase(),
@@ -118,6 +151,9 @@ export function SendUSDC() {
           amount: numericAmount,
           chain: tokenConfig.name,
           status: 'PENDING',
+          referral_code_used: referralCode.trim() || null,
+          referral_bonus_points: bonusPoints,
+          referrer_wallet_address: referrerWallet || null
         }).select().single()
 
         // 2. Execute smart contract call
@@ -136,14 +172,47 @@ export function SendUSDC() {
           }).eq('id', insertData.id)
         }
 
-        // 4. Award Credits
-        const earned = await awardCredits(address, numericAmount, currentRate)
-        alert(`Transaction sent successfully! Hash: ${hash}\nYou earned ${earned.toLocaleString()} credits!`)
+        // 4. Award Credits to referred user
+        const earned = await awardCredits(address, numericAmount, currentRate, bonusPoints)
+
+        // 5. If referral code was used, create referral relationship and award referrer
+        if (referrerWallet && insertData) {
+          // Create referral relationship
+          await supabase.from('referral_relationships').insert({
+            referral_code: referralCode.trim(),
+            referred_wallet_address: address.toLowerCase(),
+            referrer_wallet_address: referrerWallet,
+            total_referred_amount: numericAmount
+          })
+
+          // Calculate referrer's 20% bonus
+          const referrerBonus = Math.floor(basePoints * 0.20)
+
+          // Award points to referrer
+          await awardCredits(referrerWallet, 0, 0, referrerBonus)
+
+          // Record referrer earnings
+          await supabase.from('referral_earnings').insert({
+            referrer_wallet_address: referrerWallet,
+            referred_wallet_address: address.toLowerCase(),
+            transaction_id: insertData.id,
+            earned_amount: numericAmount,
+            earned_points: referrerBonus
+          })
+        }
+
+        // 6. Show success message
+        let message = `Transaction sent successfully! Hash: ${hash}\nYou earned ${earned.toLocaleString()} credits!`
+        if (bonusPoints > 0) {
+          message += `\n+${bonusPoints.toLocaleString()} bonus points from referral!`
+        }
+        alert(message)
         setAmount('')
+        setReferralCode('')
       }
     } catch (error: unknown) {
       console.error('Transfer failed:', error)
-      
+
       // Log failure in Supabase
       await supabase.from('transactions').insert({
         sender_address: address.toLowerCase(),
@@ -239,10 +308,10 @@ export function SendUSDC() {
 
         {/* Credit Calculation */}
         {amount && (
-          <div style={{ 
-            background: 'var(--card-bg)', 
-            border: '1px solid var(--card-border)', 
-            borderRadius: 'var(--radius-sm)', 
+          <div style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: 'var(--radius-sm)',
             padding: 'var(--spacing-md)',
             marginBottom: 'var(--spacing-md)'
           }}>
@@ -252,6 +321,11 @@ export function SendUSDC() {
             <div className="text-muted" style={{ fontSize: '0.875rem', marginTop: '4px' }}>
               at current rate: 1 USDC = {currentRate.toLocaleString()} points
             </div>
+            {referralCode && (
+              <div className="text-success" style={{ fontSize: '0.875rem', marginTop: '4px' }}>
+                +{Math.floor(Number(amount) * currentRate * 0.10).toLocaleString()} bonus points from referral!
+              </div>
+            )}
           </div>
         )}
 
