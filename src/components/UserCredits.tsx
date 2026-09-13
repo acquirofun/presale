@@ -1,172 +1,299 @@
-// src/components/UserCredits.tsx
+
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAccount } from 'wagmi'
 import { useAppKitAccount } from '@reown/appkit/react'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || "https://kifydthslaqeqmohvetb.supabase.co", 
-  process.env.SUPABASE_KEY || "sb_publishable_gPldRZjoctXxbEuEmy1GjA_EjzSLjqk"
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY
 
-export function UserCredits() {
-  const { address: evmAddress } = useAccount()
-  const { address: solanaAddress, isConnected } = useAppKitAccount()
-  
-  const activeAddress = (evmAddress || solanaAddress)?.toLowerCase()
-  const [credits, setCredits] = useState<number>(0)
-  const [loading, setLoading] = useState(false)
+const supabase =
+  supabaseUrl && supabaseKey
+    ? createClient(supabaseUrl, supabaseKey)
+    : null
 
-  useEffect(() => {
-    async function fetchCredits() {
-      if (!isConnected || !activeAddress) {
-        setCredits(0)
-        return
-      }
+const REFERRAL_MINIMUM = 30
 
-      setLoading(true)
-      const { data } = await supabase
-        .from('user_credits')
-        .select('credits')
-        .eq('wallet_address', activeAddress)
-        .single()
+function useUserCredits(includeQualification = false) {
+  const { address, isConnected } = useAppKitAccount()
 
-      if (data) {
-        setCredits(data.credits)
-      } else {
-        setCredits(0) // New user with 0 credits
-      }
-      setLoading(false)
-    }
-
-    fetchCredits()
-  }, [isConnected, activeAddress])
-
-  if (!isConnected) return null
-
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div>
-        <h3 style={{ margin: 0, fontSize: '1rem' }}>My Credits</h3>
-        <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-          Earn credits by sending USDC
-        </p>
-      </div>
-      <div className="text-success" style={{ fontSize: '1.5rem', fontWeight: '700' }}>
-        {loading ? '...' : `${credits.toLocaleString()}`}
-      </div>
-    </div>
-  )
-}
-
-// Export a version with referral link for dashboard
-export function UserCreditsWithReferral() {
-  const { address: evmAddress } = useAccount()
-  const { address: solanaAddress, isConnected } = useAppKitAccount()
-
-  const activeAddress = (evmAddress || solanaAddress)?.toLowerCase()
-  const [credits, setCredits] = useState<number>(0)
-  const [loading, setLoading] = useState(false)
+  const [credits, setCredits] = useState(0)
   const [qualifies, setQualifies] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+
     async function fetchData() {
-      if (!isConnected || !activeAddress) {
-        setCredits(0)
-        setQualifies(false)
+      if (!isConnected || !address) {
+        if (!cancelled) {
+          setCredits(0)
+          setQualifies(false)
+          setLoading(false)
+        }
+        return
+      }
+
+      if (!supabase) {
+        console.error(
+          'Supabase is not configured. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_KEY.'
+        )
+
+        if (!cancelled) {
+          setCredits(0)
+          setQualifies(false)
+          setLoading(false)
+        }
+
         return
       }
 
       setLoading(true)
 
-      // Fetch credits
-      const { data: creditData } = await supabase
-        .from('user_credits')
-        .select('credits')
-        .eq('wallet_address', activeAddress)
-        .single()
+      try {
+        /*
+         * Wallet addresses should ideally be stored in a consistent
+         * format in the database.
+         *
+         * For EVM addresses, lowercase normalization is safe.
+         * Don't blindly lowercase Solana Base58 addresses.
+         */
+        const walletAddress = address.toLowerCase()
 
-      if (creditData) {
-        setCredits(creditData.credits)
-      } else {
-        setCredits(0)
+        // ---------------------------------------------------------
+        // Fetch user credits
+        // ---------------------------------------------------------
+
+        const { data: creditData, error: creditError } = await supabase
+          .from('user_credits')
+          .select('credits')
+          .eq('wallet_address', walletAddress)
+          .maybeSingle()
+
+        if (creditError) {
+          throw new Error(creditError.message)
+        }
+
+        const userCredits = Number(creditData?.credits || 0)
+
+        if (!cancelled) {
+          setCredits(userCredits)
+        }
+
+        // ---------------------------------------------------------
+        // Check referral qualification
+        // ---------------------------------------------------------
+
+        if (includeQualification) {
+          const { data: transactions, error: transactionError } =
+            await supabase
+              .from('transactions')
+              .select('amount')
+              .eq('sender_address', walletAddress)
+              .eq('status', 'SUCCESS')
+
+          if (transactionError) {
+            throw new Error(transactionError.message)
+          }
+
+          const totalSpent =
+            transactions?.reduce(
+              (sum, transaction) =>
+                sum + Number(transaction.amount || 0),
+              0
+            ) || 0
+
+          if (!cancelled) {
+            setQualifies(totalSpent >= REFERRAL_MINIMUM)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch user credits:', error)
+
+        if (!cancelled) {
+          setCredits(0)
+
+          if (includeQualification) {
+            setQualifies(false)
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
-
-      // Check qualification for referral
-      const { data: transactions } = await supabase
-        .from('transactions')
-        .select('amount')
-        .eq('sender_address', activeAddress)
-        .eq('status', 'SUCCESS')
-
-      const total = transactions?.reduce((sum, tx) => sum + tx.amount, 0) || 0
-      setQualifies(total >= 30)
-
-      setLoading(false)
     }
 
     fetchData()
-  }, [isConnected, activeAddress])
+
+    return () => {
+      cancelled = true
+    }
+  }, [address, isConnected, includeQualification])
+
+  return {
+    credits,
+    qualifies,
+    loading,
+    isConnected,
+  }
+}
+
+/* =========================================================
+   FULL CREDITS CARD
+   ========================================================= */
+
+export function UserCredits() {
+  const { credits, loading, isConnected } = useUserCredits(false)
 
   if (!isConnected) return null
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div>
-        <h3 style={{ margin: 0, fontSize: '1rem' }}>My Credits</h3>
-        <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-          Earn credits by sending USDC
-        </p>
-        {qualifies && (
-          <p className="text-success" style={{ margin: 0, fontSize: '0.75rem', marginTop: '4px' }}>
-            🎉 You qualify for a referral code!
+    <section className="user-credits-card">
+      <div className="user-credits-info">
+        <div className="user-credits-icon">
+          ✦
+        </div>
+
+        <div>
+          <span className="user-credits-eyebrow">
+            REWARD BALANCE
+          </span>
+
+          <h3>My Credits</h3>
+
+          <p>
+            Earn credits by sending USDC
           </p>
+        </div>
+      </div>
+
+      <div className="user-credits-value">
+        {loading ? (
+          <span className="credits-loading">...</span>
+        ) : (
+          <>
+            <strong>
+              {credits.toLocaleString()}
+            </strong>
+
+            <span>Credits</span>
+          </>
         )}
       </div>
-      <div className="text-success" style={{ fontSize: '1.5rem', fontWeight: '700' }}>
-        {loading ? '...' : `${credits.toLocaleString()}`}
-      </div>
-    </div>
+    </section>
   )
 }
 
-// Export a simple version for header use
-export function UserCreditsSimple() {
-  const { address: evmAddress } = useAccount()
-  const { address: solanaAddress, isConnected } = useAppKitAccount()
-  
-  const activeAddress = (evmAddress || solanaAddress)?.toLowerCase()
-  const [credits, setCredits] = useState<number>(0)
-  const [loading, setLoading] = useState(false)
+/* =========================================================
+   DASHBOARD VERSION WITH REFERRAL QUALIFICATION
+   ========================================================= */
 
-  useEffect(() => {
-    async function fetchCredits() {
-      if (!isConnected || !activeAddress) {
-        setCredits(0)
-        return
-      }
-
-      setLoading(true)
-      const { data } = await supabase
-        .from('user_credits')
-        .select('credits')
-        .eq('wallet_address', activeAddress)
-        .single()
-
-      if (data) {
-        setCredits(data.credits)
-      } else {
-        setCredits(0)
-      }
-      setLoading(false)
-    }
-
-    fetchCredits()
-  }, [isConnected, activeAddress])
+export function UserCreditsWithReferral() {
+  const {
+    credits,
+    qualifies,
+    loading,
+    isConnected,
+  } = useUserCredits(true)
 
   if (!isConnected) return null
 
-  return <span>{loading ? '...' : `${credits.toLocaleString()} Credits`}</span>
+  return (
+    <section className="user-credits-card user-credits-dashboard">
+      <div className="user-credits-main">
+        <div className="user-credits-info">
+          <div className="user-credits-icon">
+            ✦
+          </div>
+
+          <div>
+            <span className="user-credits-eyebrow">
+              REWARD BALANCE
+            </span>
+
+            <h3>My Credits</h3>
+
+            <p>
+              Earn credits by sending USDC
+            </p>
+
+            {qualifies && !loading && (
+              <div className="referral-qualified-badge">
+                <span>✓</span>
+                Referral unlocked
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="user-credits-value">
+          {loading ? (
+            <span className="credits-loading">...</span>
+          ) : (
+            <>
+              <strong>
+                {credits.toLocaleString()}
+              </strong>
+
+              <span>Credits</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {qualifies && !loading && (
+        <div className="credits-referral-banner">
+          <div className="credits-referral-icon">
+            ↗
+          </div>
+
+          <div>
+            <strong>
+              You&apos;re eligible for the referral program
+            </strong>
+
+            <p>
+              Generate your referral code and start earning
+              points from your referrals.
+            </p>
+          </div>
+        </div>
+      )}
+    </section>
+  )
 }
+
+/* =========================================================
+   HEADER / COMPACT VERSION
+   ========================================================= */
+
+export function UserCreditsSimple() {
+  const {
+    credits,
+    loading,
+    isConnected,
+  } = useUserCredits(false)
+
+  if (!isConnected) return null
+
+  return (
+    <span className="user-credits-simple">
+      <span className="credits-mini-icon">
+        ✦
+      </span>
+
+      <span className="credits-mini-value">
+        {loading
+          ? '...'
+          : credits.toLocaleString()}
+      </span>
+
+      <span className="credits-mini-label">
+        Credits
+      </span>
+    </span>
+  )
+}
+

@@ -1,9 +1,7 @@
 import { Header } from "@/components/Header";
-import { SendUSDC } from "@/components/SendUSDC";
-import { UserCredits } from "@/components/UserCredits";
-import { OfferInfo } from "@/components/OfferInfo";
-import { ValueDisplay } from "@/components/ValueDisplay";
-import { StatsDashboard } from "@/components/StatsDashboard";
+import { ReferralCodeGenerator } from "@/components/ReferralCodeGenerator";
+import { ReferralStats } from "@/components/ReferralStats";
+import { UserCreditsWithReferral } from "@/components/UserCredits";
 
 export default function Home() {
   return (
@@ -11,30 +9,16 @@ export default function Home() {
       <Header />
       
       <div className="container" style={{ marginTop: 'var(--spacing-xl)' }}>
-        {/* Hero Section with Countdown */}
-
-        <div className="card" style={{ marginBottom: 'var(--spacing-lg)' }}>
-          <UserCredits />
-        </div>
-
-        {/* Value Display Section */}
-        <ValueDisplay />
-
-        {/* Stats Dashboard */}
-        <StatsDashboard />
-
-
-        {/* Offer Info */}
-        <OfferInfo />
-
-        {/* Send USDC Widget */}
 
         <div className="card mb-lg">
-        <p>BUY MORE</p>
-          <SendUSDC />
+          <UserCreditsWithReferral />
         </div>
 
-        {/* User Credits (still show for detailed view) */}
+        {/* Referral System */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-lg)' }}>
+          <ReferralCodeGenerator />
+          <ReferralStats />
+        </div>
         
       </div>
     </div>

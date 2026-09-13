@@ -1,12 +1,22 @@
-
-
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div style={{ margin: '30% auto 0px' , textAlign: 'center', padding: 'var(--spacing-xl)', fontSize: '1.25rem', fontWeight: '500'}}>
-      Want to start the journey? Click the button below to connect your wallet and begin your adventure!
-      <br/>
-      <a href = '/home'><button style={{ marginTop: 'var(--spacing-lg)', height: '40px', width: '120px', fontWeight: '700' }}>Let&apos;s Go!</button></a>
-    </div>
+    <main className="landing-page">
+      <section className="landing-card">
+        <h1 className="landing-title">
+          Ready to Start Your Journey?
+        </h1>
+
+        <p className="landing-description">
+          Connect your wallet and begin your adventure.
+          Your journey starts here.
+        </p>
+
+        <Link href="/home" className="landing-button">
+          Let&apos;s Go →
+        </Link>
+      </section>
+    </main>
   );
 }

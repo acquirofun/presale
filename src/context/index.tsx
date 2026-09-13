@@ -20,8 +20,8 @@ import { SupabaseStorage } from "@/config/siwx-storage";
 
 // Set up metadata
 const metadata = {
-  name: "next-reown-appkit",
-  description: "next-reown-appkit",
+  name: "PointSwap",
+  description: "PointSwap presale",
   url: "https://github.com/0xonerb/next-reown-appkit-ssr", // origin must match your domain & subdomain
   icons: ["https://avatars.githubusercontent.com/u/179229932"],
 };

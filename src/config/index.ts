@@ -22,11 +22,7 @@ import { BitcoinAdapter } from "@reown/appkit-adapter-bitcoin";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { SolanaAdapter } from "@reown/appkit-adapter-solana";
 
-const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
-
-if (!projectId) {
-  throw new Error("NEXT_PUBLIC_PROJECT_ID is not defined");
-}
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID || "";
 
 export { projectId };
 

@@ -1,238 +1,715 @@
-// src/components/ReferralCodeGenerator.tsx
+
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
+import { useEffect, useState } from 'react'
 import { useAppKitAccount } from '@reown/appkit/react'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || "https://kifydthslaqeqmohvetb.supabase.co",
-  process.env.SUPABASE_KEY || "sb_publishable_gPldRZjoctXxbEuEmy1GjA_EjzSLjqk"
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY
 
-export function ReferralCodeGenerator() {
-  const { address: evmAddress } = useAccount()
-  const { address: solanaAddress, isConnected } = useAppKitAccount()
+const supabase =
+  supabaseUrl && supabaseKey
+    ? createClient(supabaseUrl, supabaseKey)
+    : null
 
-  const activeAddress = (evmAddress || solanaAddress)?.toLowerCase()
+const QUALIFICATION_AMOUNT = 30
+
+interface ReferralCodeGeneratorProps {
+  className?: string
+}
+
+export function ReferralCodeGenerator({
+  className = '',
+}: ReferralCodeGeneratorProps) {
+  // chainId removed because useAppKitAccount() does not provide it
+  const { address, isConnected } = useAppKitAccount()
+
   const [referralCode, setReferralCode] = useState<string | null>(null)
-  const [qualifies, setQualifies] = useState<boolean>(false)
-  const [loading, setLoading] = useState(false)
-  const [totalSpent, setTotalSpent] = useState<number>(0)
-  const [copied, setCopied] = useState(false)
+  const [qualifies, setQualifies] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
+  const [totalSpent, setTotalSpent] = useState(0)
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  /**
+   * Wallet addresses:
+   *
+   * EVM addresses are case-insensitive.
+   * Solana addresses are case-sensitive.
+   *
+   * Since this component does not currently have chainId,
+   * keep the address exactly as returned by AppKit.
+   */
+  const normalizedAddress = address;
 
   useEffect(() => {
+    let cancelled = false
+
     async function checkQualification() {
-      if (!isConnected || !activeAddress) {
-        setQualifies(false)
+      if (!isConnected || !normalizedAddress) {
+        if (!cancelled) {
+          setQualifies(false)
+          setReferralCode(null)
+          setTotalSpent(0)
+          setLoading(false)
+        }
+
+        return
+      }
+
+      if (!supabase) {
+        if (!cancelled) {
+          setError(
+            'Supabase is not configured. Please check your environment variables.'
+          )
+          setLoading(false)
+        }
+
         return
       }
 
       setLoading(true)
+      setError(null)
 
-      // Check total spent
-      const { data: transactions } = await supabase
-        .from('transactions')
-        .select('amount')
-        .eq('sender_address', activeAddress)
-        .eq('status', 'SUCCESS')
+      try {
+        const { data: transactions, error: transactionsError } =
+          await supabase
+            .from('transactions')
+            .select('amount')
+            .eq('sender_address', normalizedAddress)
+            .eq('status', 'SUCCESS')
 
-      const total = transactions?.reduce((sum, tx) => sum + tx.amount, 0) || 0
-      setTotalSpent(total)
-      setQualifies(total >= 30)
+        if (transactionsError) {
+          throw new Error(transactionsError.message)
+        }
 
-      // Check if user already has a referral code
-      const { data: existingCode } = await supabase
-        .from('referral_codes')
-        .select('code')
-        .eq('referrer_wallet_address', activeAddress)
-        .single()
+        const total =
+          transactions?.reduce(
+            (sum, transaction) => sum + Number(transaction.amount || 0),
+            0
+          ) || 0
 
-      if (existingCode) {
-        setReferralCode(existingCode.code)
+        const isQualified = total >= QUALIFICATION_AMOUNT
+
+        if (cancelled) return
+
+        setTotalSpent(total)
+        setQualifies(isQualified)
+
+        const { data: existingCode, error: codeError } = await supabase
+          .from('referral_codes')
+          .select('code')
+          .eq('referrer_wallet_address', normalizedAddress)
+          .maybeSingle()
+
+        if (codeError) {
+          throw new Error(codeError.message)
+        }
+
+        if (!cancelled) {
+          setReferralCode(existingCode?.code || null)
+        }
+      } catch (err) {
+        console.error(
+          'Failed to check referral qualification:',
+          err
+        )
+
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Unable to load referral information.'
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
-
-      setLoading(false)
     }
 
     checkQualification()
-  }, [isConnected, activeAddress])
+
+    return () => {
+      cancelled = true
+    }
+  }, [isConnected, normalizedAddress])
 
   const generateCode = async () => {
-    if (!activeAddress) return
+    if (!normalizedAddress || !supabase) return
 
-    setLoading(true)
+    setGenerating(true)
+    setError(null)
 
     try {
-      // First, check if the referral_codes table exists
-      const { error: tableCheckError } = await supabase
-        .from('referral_codes')
-        .select('id')
-        .limit(1)
+      /**
+       * Prefer the database RPC because uniqueness should ultimately
+       * be enforced by the database, not the browser.
+       */
+      const { data: generatedCode, error: rpcError } =
+        await supabase.rpc('generate_referral_code')
 
-      if (tableCheckError) {
-        console.error('Referral table not found:', tableCheckError)
-        alert('Referral system not set up yet. Please run the SQL setup script in Supabase.')
-        setLoading(false)
-        return
+      let newCode: string | null = null
+
+      if (!rpcError && generatedCode) {
+        newCode = String(generatedCode)
+      } else {
+        /**
+         * Fallback for installations where the RPC isn't available.
+         *
+         * The database should still have a UNIQUE constraint
+         * on the `code` column.
+         */
+        const chars =
+          'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+        for (let attempt = 0; attempt < 10; attempt++) {
+          let candidate = ''
+
+          for (let i = 0; i < 8; i++) {
+            candidate += chars.charAt(
+              Math.floor(Math.random() * chars.length)
+            )
+          }
+
+          const {
+            data: existingCode,
+            error: lookupError,
+          } = await supabase
+            .from('referral_codes')
+            .select('code')
+            .eq('code', candidate)
+            .maybeSingle()
+
+          if (lookupError) {
+            throw new Error(lookupError.message)
+          }
+
+          if (!existingCode) {
+            newCode = candidate
+            break
+          }
+        }
       }
 
-      // Try to call the SQL function to generate a unique code
-      let newCode: string
-      try {
-        const { data: codeData, error } = await supabase
-          .rpc('generate_referral_code')
-
-        if (error) throw error
-        newCode = codeData
-      } catch (funcError) {
-        console.error('SQL function not available, using client-side generation:', funcError)
-        // Fallback: generate code client-side
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-        let code = ''
-        for (let i = 0; i < 8; i++) {
-          code += chars.charAt(Math.floor(Math.random() * chars.length))
-        }
-        newCode = code
-
-        // Check if code already exists
-        const { data: existingCode } = await supabase
-          .from('referral_codes')
-          .select('code')
-          .eq('code', newCode)
-          .single()
-
-        if (existingCode) {
-          throw new Error('Code collision, please try again')
-        }
+      if (!newCode) {
+        throw new Error(
+          'Could not generate a unique referral code. Please try again.'
+        )
       }
 
-      // Insert the referral code
-      const { error: insertError } = await supabase
+      const {
+        data: insertedCode,
+        error: insertError,
+      } = await supabase
         .from('referral_codes')
         .insert({
           code: newCode,
-          referrer_wallet_address: activeAddress,
-          is_active: true
+          referrer_wallet_address: normalizedAddress,
+          is_active: true,
         })
+        .select('code')
+        .single()
 
       if (insertError) {
-        console.error('Insert error:', insertError)
-        throw insertError
+        /**
+         * This can happen if the user clicked twice or another
+         * request generated the same code at nearly the same time.
+         */
+        if (insertError.code === '23505') {
+          throw new Error(
+            'This referral code was already taken. Please generate another one.'
+          )
+        }
+
+        throw new Error(insertError.message)
       }
 
-      setReferralCode(newCode)
-    } catch (error) {
-      console.error('Failed to generate referral code:', error)
-      alert(`Failed to generate referral code: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setReferralCode(
+        insertedCode?.code || newCode
+      )
+    } catch (err) {
+      console.error(
+        'Failed to generate referral code:',
+        err
+      )
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate your referral code.'
+      )
     } finally {
-      setLoading(false)
+      setGenerating(false)
     }
   }
 
-  const copyToClipboard = () => {
-    if (referralCode) {
-      navigator.clipboard.writeText(referralCode)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+  const referralLink =
+    referralCode &&
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/?ref=${encodeURIComponent(
+          referralCode
+        )}`
+      : ''
+
+  const copyText = async (
+    type: 'code' | 'link'
+  ) => {
+    const value =
+      type === 'code'
+        ? referralCode
+        : referralLink
+
+    if (!value) return
+
+    try {
+      await navigator.clipboard.writeText(value)
+
+      setCopied(type)
+
+      window.setTimeout(() => {
+        setCopied(null)
+      }, 2000)
+    } catch (err) {
+      console.error(
+        'Failed to copy:',
+        err
+      )
+
+      setError(
+        'Could not copy to clipboard. Please copy it manually.'
+      )
     }
   }
+
+  const progress = Math.min(
+    100,
+    (totalSpent / QUALIFICATION_AMOUNT) * 100
+  )
+
+  const remaining = Math.max(
+    0,
+    QUALIFICATION_AMOUNT - totalSpent
+  )
 
   if (!isConnected) {
     return (
-      <div className="card" style={{ padding: 'var(--spacing-md)' }}>
-        <h3>Referral Program</h3>
-        <p className="text-muted">Connect your wallet to join the referral program</p>
-      </div>
+      <section
+        className={`referral-generator referral-generator-empty ${className}`}
+      >
+        <div className="referral-generator-icon">
+          ↗
+        </div>
+
+        <div className="referral-generator-content">
+          <span className="referral-eyebrow">
+            REFERRAL PROGRAM
+          </span>
+
+          <h2>
+            Unlock Referral Rewards
+          </h2>
+
+          <p>
+            Connect your wallet to check your eligibility
+            and start earning referral rewards.
+          </p>
+        </div>
+      </section>
     )
   }
 
   if (loading) {
     return (
-      <div className="card" style={{ padding: 'var(--spacing-md)' }}>
-        <h3>Referral Program</h3>
-        <p className="text-muted">Loading...</p>
-      </div>
+      <section
+        className={`referral-generator ${className}`}
+      >
+        <div className="referral-generator-header">
+          <div>
+            <span className="referral-eyebrow">
+              REFERRAL PROGRAM
+            </span>
+
+            <h2>
+              Referral Rewards
+            </h2>
+          </div>
+
+          <div className="referral-loading-dot">
+            <span />
+            Loading
+          </div>
+        </div>
+
+        <div className="referral-skeleton">
+          <div className="skeleton-line skeleton-title" />
+          <div className="skeleton-line" />
+          <div className="skeleton-box" />
+        </div>
+      </section>
+    )
+  }
+
+  if (
+    error &&
+    !qualifies &&
+    totalSpent === 0
+  ) {
+    return (
+      <section
+        className={`referral-generator ${className}`}
+      >
+        <div className="referral-generator-header">
+          <div>
+            <span className="referral-eyebrow">
+              REFERRAL PROGRAM
+            </span>
+
+            <h2>
+              Referral Rewards
+            </h2>
+          </div>
+        </div>
+
+        <div className="referral-error">
+          <span className="referral-error-icon">
+            !
+          </span>
+
+          <div>
+            <strong>
+              Unable to load referral status
+            </strong>
+
+            <p>
+              {error}
+            </p>
+          </div>
+        </div>
+      </section>
     )
   }
 
   if (!qualifies) {
     return (
-      <div className="card" style={{ padding: 'var(--spacing-md)' }}>
-        <h3>Referral Program</h3>
-        <p className="text-muted" style={{ marginBottom: 'var(--spacing-sm)' }}>
-          Unlock your referral code by purchasing at least $30 worth of USDC
-        </p>
-        <div style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--primary)' }}>
-          ${totalSpent.toFixed(2)} / $30.00
+      <section
+        className={`referral-generator ${className}`}
+      >
+        <div className="referral-generator-header">
+          <div>
+            <span className="referral-eyebrow">
+              REFERRAL PROGRAM
+            </span>
+
+            <h2>
+              Unlock{' '}
+              <span>
+                Referral Rewards
+              </span>
+            </h2>
+
+            <p>
+              Purchase at least $30 worth of USDC
+              to unlock your personal referral code.
+            </p>
+          </div>
+
+          <div className="referral-lock-icon">
+            🔒
+          </div>
         </div>
-        <div className="text-muted" style={{ fontSize: '0.875rem' }}>
-          ${Math.max(0, 30 - totalSpent).toFixed(2)} more to go
+
+        <div className="qualification-card">
+          <div className="qualification-top">
+            <div>
+              <span className="qualification-label">
+                Qualification progress
+              </span>
+
+              <strong>
+                ${totalSpent.toFixed(2)}
+
+                <small>
+                  {' '}
+                  / $
+                  {QUALIFICATION_AMOUNT.toFixed(2)}
+                </small>
+              </strong>
+            </div>
+
+            <span className="qualification-percent">
+              {Math.round(progress)}%
+            </span>
+          </div>
+
+          <div className="qualification-track">
+            <div
+              className="qualification-fill"
+              style={{
+                width: `${progress}%`,
+              }}
+            />
+          </div>
+
+          <div className="qualification-bottom">
+            <span>
+              {remaining > 0
+                ? `$${remaining.toFixed(
+                    2
+                  )} more to unlock`
+                : 'Qualification reached'}
+            </span>
+
+            <span>
+              Minimum $30
+            </span>
+          </div>
         </div>
-      </div>
+
+        <div className="referral-benefits">
+          <div className="benefit">
+            <span className="benefit-icon">
+              20%
+            </span>
+
+            <div>
+              <strong>
+                Earn 20% in points
+              </strong>
+
+              <p>
+                Receive points based on your
+                referrals&apos; purchases.
+              </p>
+            </div>
+          </div>
+
+          <div className="benefit">
+            <span className="benefit-icon">
+              10%
+            </span>
+
+            <div>
+              <strong>
+                Give your friends 10%
+              </strong>
+
+              <p>
+                Your referred users receive a
+                bonus when they use your code.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="referral-inline-error">
+            {error}
+          </div>
+        )}
+      </section>
     )
   }
 
   return (
-    <div className="card" style={{ padding: 'var(--spacing-md)' }}>
-      <h3>Your Referral Code</h3>
+    <section
+      className={`referral-generator referral-generator-qualified ${className}`}
+    >
+      <div className="referral-generator-header">
+        <div>
+          <div className="referral-status">
+            <span className="status-dot" />
+            Eligible
+          </div>
+
+          <span className="referral-eyebrow">
+            REFERRAL PROGRAM
+          </span>
+
+          <h2>
+            Your Referral{' '}
+            <span>Code</span>
+          </h2>
+
+          <p>
+            Invite friends, grow the community,
+            and earn points from their qualifying
+            purchases.
+          </p>
+        </div>
+
+        <div className="referral-reward-badge">
+          <strong>
+            20%
+          </strong>
+
+          <span>
+            Referral reward
+          </span>
+        </div>
+      </div>
 
       {referralCode ? (
-        <div>
-          <div style={{
-            background: 'var(--card-bg)',
-            border: '2px solid var(--primary)',
-            borderRadius: 'var(--radius-sm)',
-            padding: 'var(--spacing-md)',
-            marginBottom: 'var(--spacing-md)',
-            textAlign: 'center'
-          }}>
-            <div style={{
-              fontSize: '2rem',
-              fontWeight: '700',
-              color: 'var(--primary)',
-              letterSpacing: '2px',
-              marginBottom: 'var(--spacing-sm)'
-            }}>
+        <>
+          <div className="referral-code-card">
+            <div className="referral-code-label">
+              YOUR UNIQUE CODE
+            </div>
+
+            <div className="referral-code">
               {referralCode}
             </div>
+
             <button
-              onClick={copyToClipboard}
-              className="secondary"
-              style={{ fontSize: '0.875rem', padding: '8px 16px' }}
+              type="button"
+              onClick={() =>
+                copyText('code')
+              }
+              className="copy-code-button"
             >
-              {copied ? 'Copied!' : 'Copy Code'}
+              <span>
+                {copied === 'code'
+                  ? '✓'
+                  : '⧉'}
+              </span>
+
+              {copied === 'code'
+                ? 'Copied'
+                : 'Copy Code'}
             </button>
           </div>
 
-          <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            <p style={{ marginBottom: 'var(--spacing-xs)' }}>
-              <strong>Share this code with friends and earn 20% of their purchase in points!</strong>
-            </p>
-            <p style={{ marginBottom: 'var(--spacing-xs)' }}>
-              • Your friends get 10% bonus points when they use your code
-            </p>
+          <div className="referral-link-row">
+            <div className="referral-link-content">
+              <span className="referral-link-icon">
+                ↗
+              </span>
+
+              <div>
+                <span>
+                  SHAREABLE REFERRAL LINK
+                </span>
+
+                <strong>
+                  {referralLink}
+                </strong>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                copyText('link')
+              }
+              className="copy-link-button"
+            >
+              {copied === 'link'
+                ? 'Copied'
+                : 'Copy Link'}
+            </button>
+          </div>
+
+          <div className="referral-rewards-grid">
+            <div className="reward-card">
+              <div className="reward-icon reward-icon-primary">
+                20%
+              </div>
+
+              <div>
+                <strong>
+                  You earn
+                </strong>
+
+                <p>
+                  Earn 20% of your referred
+                  users&apos; qualifying purchase
+                  value in points.
+                </p>
+              </div>
+            </div>
+
+            <div className="reward-card">
+              <div className="reward-icon">
+                10%
+              </div>
+
+              <div>
+                <strong>
+                  Friends receive
+                </strong>
+
+                <p>
+                  Your friends receive a 10%
+                  bonus when they join through
+                  your referral.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="referral-footer-note">
+            <span>✦</span>
+
+            Track referrals, purchases,
+            and earned points from your
+            Referral Stats dashboard.
+          </div>
+
+          {error && (
+            <div className="referral-inline-error">
+              {error}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="generate-referral-card">
+          <div className="generate-referral-icon">
+            ✦
+          </div>
+
+          <div className="generate-referral-content">
+            <h3>
+              You&apos;re qualified!
+            </h3>
+
             <p>
-              • Track your referrals and earnings in the stats dashboard
+              Your purchases have reached
+              the $30 minimum. Generate your
+              unique referral code and start
+              sharing.
             </p>
           </div>
-        </div>
-      ) : (
-        <div>
-          <p className="text-muted" style={{ marginBottom: 'var(--spacing-md)' }}>
-            You qualify for a referral code! Generate one now to start earning.
-          </p>
+
           <button
+            type="button"
             onClick={generateCode}
-            disabled={loading}
-            className="primary"
-            style={{ width: '100%' }}
+            disabled={generating}
+            className="generate-referral-button"
           >
-            {loading ? 'Generating...' : 'Generate Referral Code'}
+            {generating ? (
+              <>
+                <span className="button-spinner" />
+                Generating...
+              </>
+            ) : (
+              <>
+                Generate Referral Code
+                <span>→</span>
+              </>
+            )}
           </button>
+
+          {error && (
+            <div className="referral-inline-error">
+              {error}
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </section>
   )
 }
+

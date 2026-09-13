@@ -1,140 +1,219 @@
+
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react'
 import { createClient } from '@supabase/supabase-js'
-import Image from "next/image"
+import Image from 'next/image'
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || "https://kifydthslaqeqmohvetb.supabase.co", 
-  process.env.SUPABASE_KEY || "sb_publishable_gPldRZjoctXxbEuEmy1GjA_EjzSLjqk"
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY
+
+const supabase =
+  supabaseUrl && supabaseKey
+    ? createClient(supabaseUrl, supabaseKey)
+    : null
 
 export function Header() {
   const { isConnected, address } = useAppKitAccount()
   const { open } = useAppKit()
-  const [credits, setCredits] = useState<number>(0)
+
+  const [credits, setCredits] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+
     async function fetchCredits() {
-      if (!isConnected || !address) {
+      if (!isConnected || !address || !supabase) {
         setCredits(0)
         return
       }
 
       setLoading(true)
-      const { data } = await supabase
-        .from('user_credits')
-        .select('credits')
-        .eq('wallet_address', address.toLowerCase())
-        .single()
 
-      if (data) {
-        setCredits(data.credits)
-      } else {
-        setCredits(0)
+      try {
+        const { data, error } = await supabase
+          .from('user_credits')
+          .select('credits')
+          .eq('wallet_address', address.toLowerCase())
+          .maybeSingle()
+
+        if (cancelled) return
+
+        if (error) {
+          console.error('Failed to fetch credits:', error)
+          setCredits(0)
+          return
+        }
+
+        setCredits(data?.credits ?? 0)
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to fetch credits:', error)
+          setCredits(0)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
-      setLoading(false)
     }
 
     fetchCredits()
+
+    return () => {
+      cancelled = true
+    }
   }, [isConnected, address])
 
+  const shortAddress = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : ''
+
   return (
-    <header className="header">
-      <div className="header-nav" style={{ marginRight: 'var(--spacing-xl)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-          <Image 
-            src="/bnb.png" 
-            alt="Logo" 
-            width={40} 
-            height={40}
-            style={{ borderRadius: '50%' }}
-          />
-          <span style={{ 
-            fontSize: '1.25rem', 
-            fontWeight: '700',
-            background: 'linear-gradient(135deg, #00d4aa 0%, #00ff88 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
-            PointSwap
-          </span>
-        </div>
-        
-        <nav style={{ display: 'flex', gap: 'var(--spacing-lg)' }}>
-          <a href="/home" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
-            Home
+    <header className="site-header">
+      <div className="header-inner">
+
+        {/* Logo */}
+        <a href="/home" className="brand">
+          <div className="brand-logo">
+            <Image
+              src="/bnb.png"
+              alt="PointSwap"
+              width={42}
+              height={42}
+              priority
+            />
+          </div>
+
+          <div className="brand-text">
+            <span className="brand-name">PointSwap</span>
+            <span className="brand-tagline">Web3 Presale</span>
+          </div>
+        </a>
+
+        {/* Desktop Navigation */}
+        <nav className="desktop-nav">
+          <a href="/home" className="nav-link active">
+            <span>Home</span>
           </a>
-          <a href="/dashboard" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
-            Dashboard
+
+          <a href="/dashboard" className="nav-link">
+            <span>Dashboard</span>
           </a>
-          <a href="/referral" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500' }}>
-            Referral
+
+          <a href="/referral" className="nav-link">
+            <span>Referral</span>
           </a>
         </nav>
+
+        {/* Right Section */}
+        <div className="header-actions">
+
+          {/* Credits */}
+          {isConnected && (
+            <div className="credits-card">
+              <div className="credits-icon">
+                ✦
+              </div>
+
+              <div className="credits-content">
+                <span className="credits-label">
+                  Balance
+                </span>
+
+                <span className="credits-value">
+                  {loading
+                    ? '...'
+                    : credits.toLocaleString()}
+                  <small>Credits</small>
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Wallet */}
+          <button
+            type="button"
+            onClick={() => open()}
+            className={`header-wallet-button ${
+              isConnected ? 'connected' : ''
+            }`}
+          >
+            <span className="wallet-status-dot" />
+
+            <span className="wallet-button-content">
+              <strong>
+                {isConnected
+                  ? 'Wallet Connected'
+                  : 'Connect Wallet'}
+              </strong>
+
+              {isConnected && (
+                <small>{shortAddress}</small>
+              )}
+            </span>
+
+            <span className="wallet-arrow">
+              →
+            </span>
+          </button>
+
+          {/* Mobile Menu */}
+          <button
+            type="button"
+            className={`mobile-menu-button ${
+              mobileMenuOpen ? 'open' : ''
+            }`}
+            onClick={() =>
+              setMobileMenuOpen((value) => !value)
+            }
+            aria-label="Toggle navigation"
+            aria-expanded={mobileMenuOpen}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-lg)' }}>
-        {isConnected && (
-          <div style={{ 
-            background: 'linear-gradient(135deg, rgba(0, 212, 170, 0.1) 0%, rgba(0, 255, 136, 0.1) 100%)', 
-            border: '1px solid rgba(0, 212, 170, 0.3)', 
-            borderRadius: 'var(--radius-md)', 
-            padding: '8px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.3s ease'
-          }}>
-            <div style={{ 
-              width: '8px', 
-              height: '8px', 
-              borderRadius: '50%', 
-              background: 'var(--primary)',
-              boxShadow: '0 0 8px rgba(0, 212, 170, 0.5)'
-            }} />
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Balance
-              </span>
-              <span style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '0.9rem' }}>
-                {loading ? '...' : credits.toLocaleString()}
-                <span style={{ color: 'var(--text-muted)', fontWeight: '400', fontSize: '0.75rem', marginLeft: '2px' }}>
-                  Credits
-                </span>
-              </span>
-            </div>
-          </div>
-        )}
-        <button 
-          onClick={() => open()}
-          className="primary"
-          style={{ 
-            fontSize: '0.875rem', 
-            padding: '10px 20px',
-            fontWeight: '700',
-            background: 'linear-gradient(135deg, #00d4aa 0%, #00ff88 100%)',
-            border: 'none',
-            color: '#000',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            borderRadius: 'var(--radius-sm)'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)'
-            e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 212, 170, 0.3)'
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)'
-            e.currentTarget.style.boxShadow = 'none'
-          }}
+      {/* Mobile Navigation */}
+      <div
+        className={`mobile-nav ${
+          mobileMenuOpen ? 'visible' : ''
+        }`}
+      >
+        <a
+          href="/home"
+          className="mobile-nav-link active"
+          onClick={() => setMobileMenuOpen(false)}
         >
-          {isConnected ? 'Open Wallet' : 'Connect Wallet'}
-        </button>
+          <span className="mobile-nav-icon">⌂</span>
+          Home
+        </a>
+
+        <a
+          href="/dashboard"
+          className="mobile-nav-link"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span className="mobile-nav-icon">▣</span>
+          Dashboard
+        </a>
+
+        <a
+          href="/referral"
+          className="mobile-nav-link"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span className="mobile-nav-icon">↗</span>
+          Referral
+        </a>
       </div>
     </header>
   )
 }
+

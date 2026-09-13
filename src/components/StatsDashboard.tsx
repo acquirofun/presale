@@ -61,75 +61,96 @@ export function StatsDashboard() {
   }, [isConnected, address])
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-lg)' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-lg)', width: '100%' }}>
       {/* Total Raised Card */}
-      <div className="card">
-        <h3 className="text-center">Total Raised</h3>
-        <div className="text-center" style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--primary)' }}>
-          ${loading ? '...' : totalRaised.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div>
+          <span className="text-muted" style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Global Metric</span>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 750, marginTop: '2px', marginBottom: '16px' }}>Total Raised</h3>
         </div>
-        <div className="text-center text-muted" style={{ fontSize: '0.875rem' }}>
-          USDC
+        <div>
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, color: 'var(--primary)', lineHeight: 1, letterSpacing: '-1px' }}>
+            ${loading ? '...' : totalRaised.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-muted" style={{ fontSize: '0.7rem', fontWeight: 600, marginTop: '6px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+            USDC Value
+          </div>
         </div>
       </div>
 
       {/* Referral Earnings Card */}
-      <div className="card">
-        <h3 className="text-center">Referral Earnings</h3>
-        <div className="text-center" style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--primary)' }}>
-          {loading ? '...' : referralEarnings.toLocaleString()}
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div>
+          <span className="text-muted" style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Rewards</span>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 750, marginTop: '2px', marginBottom: '16px' }}>Referral Earnings</h3>
         </div>
-        <div className="text-center text-muted" style={{ fontSize: '0.875rem' }}>
-          Points
+        <div>
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, color: 'var(--primary)', lineHeight: 1, letterSpacing: '-1px' }}>
+            {loading ? '...' : referralEarnings.toLocaleString()}
+          </div>
+          <div className="text-muted" style={{ fontSize: '0.7rem', fontWeight: 600, marginTop: '6px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+            Total Points
+          </div>
         </div>
       </div>
 
       {/* Transaction History Card */}
-      <div className="card">
-        <h3 className="text-center">Transaction History</h3>
+      <div className="card" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 750 }}>Transaction History</h3>
+          {isConnected && userTransactions.length > 0 && (
+            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--primary)', background: 'rgba(0, 212, 170, 0.08)', padding: '4px 8px', borderRadius: '6px' }}>
+              Latest {userTransactions.length}
+            </span>
+          )}
+        </div>
         
         {!isConnected ? (
-          <div className="text-center" style={{ padding: 'var(--spacing-lg)' }}>
-            <p className="text-muted">Connect your wallet to view your transactions</p>
+          <div className="text-center" style={{ padding: 'var(--spacing-xl) var(--spacing-md)', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px dashed rgba(255, 255, 255, 0.08)' }}>
+            <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>Connect your wallet to view your transactions</p>
           </div>
         ) : userTransactions.length === 0 ? (
-          <div className="text-center" style={{ padding: 'var(--spacing-lg)' }}>
-            <p className="text-muted">No transactions yet</p>
+          <div className="text-center" style={{ padding: 'var(--spacing-xl) var(--spacing-md)', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px dashed rgba(255, 255, 255, 0.08)' }}>
+            <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No transactions yet</p>
           </div>
         ) : (
-          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+          <div style={{ maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }} className="referred-users-list">
             {userTransactions.map((tx, index) => (
               <div 
                 key={index}
                 style={{ 
-                  padding: 'var(--spacing-sm)', 
-                  borderBottom: '1px solid var(--card-border)',
+                  padding: '12px 14px', 
+                  marginBottom: '8px',
+                  background: 'rgba(0, 0, 0, 0.16)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '10px',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  transition: 'border-color 0.2s ease'
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                     {tx.amount} USDC
                     {tx.referral_bonus_points > 0 && (
-                      <span className="text-success" style={{ marginLeft: '4px', fontSize: '0.75rem' }}>
-                        (+{tx.referral_bonus_points} bonus)
+                      <span className="text-success" style={{ marginLeft: '6px', fontSize: '0.7rem', fontWeight: '700', background: 'rgba(0, 212, 170, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                        +{tx.referral_bonus_points} bonus
                       </span>
                     )}
                   </div>
-                  <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                  <div className="text-muted" style={{ fontSize: '0.7rem', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {tx.chain}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div 
                     className={tx.status === 'SUCCESS' ? 'text-success' : 'text-error'}
-                    style={{ fontSize: '0.75rem', fontWeight: '600' }}
+                    style={{ fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.5px' }}
                   >
                     {tx.status}
                   </div>
-                  <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                  <div className="text-muted" style={{ fontSize: '0.7rem', marginTop: '2px' }}>
                     {new Date(tx.created_at).toLocaleDateString()}
                   </div>
                 </div>

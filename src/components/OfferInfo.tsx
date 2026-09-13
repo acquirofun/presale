@@ -1,161 +1,270 @@
+
 'use client'
 
 import { useState, useEffect } from 'react'
 import { calculateCurrentRate } from '@/utils/rateCalculator'
 
+interface RateInfo {
+  currentRate: number
+  nextRate: number
+  timeUntilNextRate: {
+    days: number
+    hours: number
+    minutes: number
+    seconds: number
+  }
+}
+
+const formatNumber = (value: number) => {
+  return value.toLocaleString()
+}
+
+const padNumber = (value: number) => {
+  return value.toString().padStart(2, '0')
+}
+
 export function OfferInfo() {
-  const [rateInfo, setRateInfo] = useState(calculateCurrentRate())
+  const [rateInfo, setRateInfo] = useState<RateInfo>(
+    calculateCurrentRate()
+  )
+
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
-    const interval = setInterval(() => {
+
+    const updateRate = () => {
       setRateInfo(calculateCurrentRate())
-    }, 1000)
+    }
+
+    updateRate()
+
+    const interval = setInterval(updateRate, 1000)
 
     return () => clearInterval(interval)
   }, [])
 
-  if (!isMounted) {
-    return (
-      <div className="card mb-lg">
-        <h3 className="text-center">Current Offer</h3>
-        <div className="offer-info-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 'var(--spacing-md)',
-          marginBottom: 'var(--spacing-md)'
-        }}>
-          <div className="text-center">
-            <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 'var(--spacing-xs)' }}>
-              Current Rate
-            </div>
-            <div className="text-success" style={{ fontSize: '1.5rem', fontWeight: '700' }}>
-              {rateInfo.currentRate.toLocaleString()}
-            </div>
-            <div className="text-muted" style={{ fontSize: '0.875rem' }}>
-              points per USDC
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 'var(--spacing-xs)' }}>
-              Next Rate
-            </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-secondary)' }}>
-              {rateInfo.nextRate.toLocaleString()}
-            </div>
-            <div className="text-muted" style={{ fontSize: '0.875rem' }}>
-              points per USDC
-            </div>
-          </div>
-        </div>
-        <div style={{
-          background: 'var(--card-bg)',
-          padding: 'var(--spacing-md)',
-          borderRadius: 'var(--radius-sm)',
-          textAlign: 'center'
-        }}>
-          <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 'var(--spacing-xs)' }}>
-            Rate decreases in
-          </div>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 'var(--spacing-md)',
-            fontSize: '1.25rem',
-            fontWeight: '600'
-          }}>
-            <div>
-              <span className="text-warning">--</span>
-              <span className="text-muted">d</span>
-            </div>
-            <div>
-              <span className="text-warning">--</span>
-              <span className="text-muted">h</span>
-            </div>
-            <div>
-              <span className="text-warning">--</span>
-              <span className="text-muted">m</span>
-            </div>
-            <div>
-              <span className="text-warning">--</span>
-              <span className="text-muted">s</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const displayRateInfo = isMounted
+    ? rateInfo
+    : {
+        currentRate: 0,
+        nextRate: 0,
+        timeUntilNextRate: {
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+        },
+      }
 
   return (
-    <div className="card mb-lg">
-      <h3 className="text-center">Current Offer</h3>
+    <section className="offer-card">
 
-      <div className="offer-info-grid" style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 'var(--spacing-md)',
-        marginBottom: 'var(--spacing-md)'
-      }}>
-        <div className="text-center">
-          <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 'var(--spacing-xs)' }}>
-            Current Rate
+      {/* Header */}
+      <div className="offer-header">
+        <div>
+          <div className="offer-eyebrow">
+            <span className="offer-live-dot" />
+            LIVE PRESALE RATE
           </div>
-          <div className="text-success" style={{ fontSize: '1.5rem', fontWeight: '700' }}>
-            {rateInfo.currentRate.toLocaleString()}
-          </div>
-          <div className="text-muted" style={{ fontSize: '0.875rem' }}>
-            points per USDC
-          </div>
+
+          <h2 className="offer-title">
+            Current <span>Offer</span>
+          </h2>
+
+          <p className="offer-subtitle">
+            Buy points at the current presale rate before it decreases.
+          </p>
         </div>
 
-        <div className="text-center">
-          <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 'var(--spacing-xs)' }}>
-            Next Rate
-          </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-secondary)' }}>
-            {rateInfo.nextRate.toLocaleString()}
-          </div>
-          <div className="text-muted" style={{ fontSize: '0.875rem' }}>
-            points per USDC
-          </div>
+        <div className="offer-badge">
+          <span>⚡</span>
+          Dynamic Rate
         </div>
       </div>
 
-      <div style={{
-        background: 'var(--card-bg)',
-        padding: 'var(--spacing-md)',
-        borderRadius: 'var(--radius-sm)',
-        textAlign: 'center'
-      }}>
-        <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 'var(--spacing-xs)' }}>
-          Rate decreases in
+
+      {/* Rate Cards */}
+      <div className="offer-rates">
+
+        {/* Current Rate */}
+        <div className="rate-card rate-card-current">
+
+          <div className="rate-card-top">
+            <span className="rate-label">
+              Current Rate
+            </span>
+
+            <span className="rate-status">
+              ACTIVE
+            </span>
+          </div>
+
+          <div className="rate-main">
+            <span className="rate-number">
+              {isMounted
+                ? formatNumber(displayRateInfo.currentRate)
+                : '--'}
+            </span>
+          </div>
+
+          <div className="rate-unit">
+            POINTS <span>PER USDC</span>
+          </div>
+
+          <div className="rate-description">
+            Best available rate
+          </div>
         </div>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 'var(--spacing-md)',
-          fontSize: '1.25rem',
-          fontWeight: '600'
-        }}>
-          <div>
-            <span className="text-warning">{rateInfo.timeUntilNextRate.days}</span>
-            <span className="text-muted">d</span>
+
+
+        {/* Arrow */}
+        <div className="rate-transition">
+          <div className="rate-arrow">
+            ↓
           </div>
-          <div>
-            <span className="text-warning">{rateInfo.timeUntilNextRate.hours}</span>
-            <span className="text-muted">h</span>
+
+          <span>Next</span>
+        </div>
+
+
+        {/* Next Rate */}
+        <div className="rate-card rate-card-next">
+
+          <div className="rate-card-top">
+            <span className="rate-label">
+              Next Rate
+            </span>
+
+            <span className="rate-status next">
+              UPCOMING
+            </span>
           </div>
-          <div>
-            <span className="text-warning">{rateInfo.timeUntilNextRate.minutes}</span>
-            <span className="text-muted">m</span>
+
+          <div className="rate-main">
+            <span className="rate-number">
+              {isMounted
+                ? formatNumber(displayRateInfo.nextRate)
+                : '--'}
+            </span>
           </div>
-          <div>
-            <span className="text-warning">{rateInfo.timeUntilNextRate.seconds}</span>
-            <span className="text-muted">s</span>
+
+          <div className="rate-unit">
+            POINTS <span>PER USDC</span>
           </div>
+
+          <div className="rate-description">
+            Rate decreases after timer
+          </div>
+        </div>
+
+      </div>
+
+
+      {/* Countdown */}
+      <div className="rate-countdown">
+
+        <div className="countdown-header">
+          <div className="countdown-title">
+            <span className="countdown-clock">
+              ◷
+            </span>
+
+            <div>
+              <strong>Rate decreases in</strong>
+              <span>Secure the current rate before it changes</span>
+            </div>
+          </div>
+
+          <div className="countdown-live">
+            LIVE
+          </div>
+        </div>
+
+
+        <div className="rate-timer">
+
+          {/* Days */}
+          <div className="timer-box">
+            <div className="timer-number">
+              {isMounted
+                ? padNumber(displayRateInfo.timeUntilNextRate.days)
+                : '--'}
+            </div>
+
+            <div className="timer-label">
+              DAYS
+            </div>
+          </div>
+
+          <div className="timer-separator">:</div>
+
+          {/* Hours */}
+          <div className="timer-box">
+            <div className="timer-number">
+              {isMounted
+                ? padNumber(displayRateInfo.timeUntilNextRate.hours)
+                : '--'}
+            </div>
+
+            <div className="timer-label">
+              HOURS
+            </div>
+          </div>
+
+          <div className="timer-separator">:</div>
+
+          {/* Minutes */}
+          <div className="timer-box">
+            <div className="timer-number">
+              {isMounted
+                ? padNumber(displayRateInfo.timeUntilNextRate.minutes)
+                : '--'}
+            </div>
+
+            <div className="timer-label">
+              MINUTES
+            </div>
+          </div>
+
+          <div className="timer-separator">:</div>
+
+          {/* Seconds */}
+          <div className="timer-box timer-box-seconds">
+            <div className="timer-number">
+              {isMounted
+                ? padNumber(displayRateInfo.timeUntilNextRate.seconds)
+                : '--'}
+            </div>
+
+            <div className="timer-label">
+              SECONDS
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      {/* Bottom Notice */}
+      <div className="offer-notice">
+        <div className="notice-icon">
+          ✓
+        </div>
+
+        <div>
+          <strong>
+            Current rate is locked in for this period
+          </strong>
+
+          <span>
+            Your purchase will use the rate displayed above.
+          </span>
         </div>
       </div>
-    </div>
+
+    </section>
   )
 }
+

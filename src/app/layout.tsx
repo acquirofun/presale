@@ -1,6 +1,5 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
-
 import "./globals.css";
 import ContextProvider from "@/context";
 import WalletSync from "@/components/WalletSync";
