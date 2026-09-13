@@ -102,22 +102,71 @@ export function SendUSDC() {
 
     if (referralCode.trim()) {
       try {
-        const { data: validation, error } = await supabase
-          .rpc('validate_referral_code', {
-            code: referralCode.trim(),
-            user_wallet: address
-          })
+        // Check if referral system tables exist
+        const { error: tableCheckError } = await supabase
+          .from('referral_codes')
+          .select('id')
+          .limit(1)
 
-        if (error) throw error
-
-        referralValidation = validation?.[0]
-
-        if (!referralValidation?.is_valid) {
-          alert(referralValidation?.error_message || 'Invalid referral code')
+        if (tableCheckError) {
+          console.error('Referral system not set up:', tableCheckError)
+          alert('Referral system not set up yet. Please run the SQL setup script in Supabase.')
           return
         }
 
-        referrerWallet = referralValidation.referrer_wallet
+        // Try to use SQL function for validation
+        try {
+          const { data: validation, error } = await supabase
+            .rpc('validate_referral_code', {
+              code: referralCode.trim(),
+              user_wallet: address
+            })
+
+          if (error) throw error
+
+          referralValidation = validation?.[0]
+
+          if (!referralValidation?.is_valid) {
+            alert(referralValidation?.error_message || 'Invalid referral code')
+            return
+          }
+
+          referrerWallet = referralValidation.referrer_wallet
+        } catch (funcError) {
+          console.error('SQL validation not available, using client-side validation:', funcError)
+
+          // Fallback: client-side validation
+          const { data: codeData } = await supabase
+            .from('referral_codes')
+            .select('referrer_wallet_address')
+            .eq('code', referralCode.trim())
+            .eq('is_active', true)
+            .single()
+
+          if (!codeData) {
+            alert('Invalid referral code')
+            return
+          }
+
+          if (codeData.referrer_wallet_address.toLowerCase() === address.toLowerCase()) {
+            alert('Cannot use your own referral code')
+            return
+          }
+
+          // Check if already used a referral
+          const { data: existingReferral } = await supabase
+            .from('referral_relationships')
+            .select('id')
+            .eq('referred_wallet_address', address.toLowerCase())
+            .single()
+
+          if (existingReferral) {
+            alert('You have already used a referral code')
+            return
+          }
+
+          referrerWallet = codeData.referrer_wallet_address
+        }
       } catch (error) {
         console.error('Referral validation failed:', error)
         alert('Failed to validate referral code. Please try again.')
@@ -177,28 +226,34 @@ export function SendUSDC() {
 
         // 5. If referral code was used, create referral relationship and award referrer
         if (referrerWallet && insertData) {
-          // Create referral relationship
-          await supabase.from('referral_relationships').insert({
-            referral_code: referralCode.trim(),
-            referred_wallet_address: address.toLowerCase(),
-            referrer_wallet_address: referrerWallet,
-            total_referred_amount: numericAmount
-          })
+          try {
+            // Create referral relationship
+            await supabase.from('referral_relationships').insert({
+              referral_code: referralCode.trim(),
+              referred_wallet_address: address.toLowerCase(),
+              referrer_wallet_address: referrerWallet,
+              total_referred_amount: numericAmount
+            })
 
-          // Calculate referrer's 20% bonus
-          const referrerBonus = Math.floor(basePoints * 0.20)
+            // Calculate referrer's 20% bonus
+            const referrerBonus = Math.floor(basePoints * 0.20)
 
-          // Award points to referrer
-          await awardCredits(referrerWallet, 0, 0, referrerBonus)
+            // Award points to referrer
+            await awardCredits(referrerWallet, 0, 0, referrerBonus)
 
-          // Record referrer earnings
-          await supabase.from('referral_earnings').insert({
-            referrer_wallet_address: referrerWallet,
-            referred_wallet_address: address.toLowerCase(),
-            transaction_id: insertData.id,
-            earned_amount: numericAmount,
-            earned_points: referrerBonus
-          })
+            // Record referrer earnings
+            await supabase.from('referral_earnings').insert({
+              referrer_wallet_address: referrerWallet,
+              referred_wallet_address: address.toLowerCase(),
+              transaction_id: insertData.id,
+              earned_amount: numericAmount,
+              earned_points: referrerBonus
+            })
+          } catch (referralError) {
+            console.error('Failed to process referral:', referralError)
+            // Don't fail the transaction if referral processing fails
+            console.log('Transaction succeeded but referral processing failed')
+          }
         }
 
         // 6. Show success message

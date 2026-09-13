@@ -65,13 +65,48 @@ export function ReferralCodeGenerator() {
     setLoading(true)
 
     try {
-      // Call the SQL function to generate a unique code
-      const { data: codeData, error } = await supabase
-        .rpc('generate_referral_code')
+      // First, check if the referral_codes table exists
+      const { error: tableCheckError } = await supabase
+        .from('referral_codes')
+        .select('id')
+        .limit(1)
 
-      if (error) throw error
+      if (tableCheckError) {
+        console.error('Referral table not found:', tableCheckError)
+        alert('Referral system not set up yet. Please run the SQL setup script in Supabase.')
+        setLoading(false)
+        return
+      }
 
-      const newCode = codeData
+      // Try to call the SQL function to generate a unique code
+      let newCode: string
+      try {
+        const { data: codeData, error } = await supabase
+          .rpc('generate_referral_code')
+
+        if (error) throw error
+        newCode = codeData
+      } catch (funcError) {
+        console.error('SQL function not available, using client-side generation:', funcError)
+        // Fallback: generate code client-side
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        let code = ''
+        for (let i = 0; i < 8; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length))
+        }
+        newCode = code
+
+        // Check if code already exists
+        const { data: existingCode } = await supabase
+          .from('referral_codes')
+          .select('code')
+          .eq('code', newCode)
+          .single()
+
+        if (existingCode) {
+          throw new Error('Code collision, please try again')
+        }
+      }
 
       // Insert the referral code
       const { error: insertError } = await supabase
@@ -82,12 +117,15 @@ export function ReferralCodeGenerator() {
           is_active: true
         })
 
-      if (insertError) throw insertError
+      if (insertError) {
+        console.error('Insert error:', insertError)
+        throw insertError
+      }
 
       setReferralCode(newCode)
     } catch (error) {
       console.error('Failed to generate referral code:', error)
-      alert('Failed to generate referral code. Please try again.')
+      alert(`Failed to generate referral code: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
     }
