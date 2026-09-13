@@ -89,6 +89,21 @@ export function ReferralStats() {
       setLoading(true)
 
       try {
+        // Check if referral tables exist
+        const { error: tableCheckError } = await supabase
+          .from('referral_codes')
+          .select('code')
+          .limit(1)
+
+        if (tableCheckError) {
+          console.error('Referral tables not found:', tableCheckError)
+          if (!cancelled) {
+            setStats(initialStats)
+            setLoading(false)
+          }
+          return
+        }
+
         /*
          * 1. Referral code + overview
          */

@@ -86,6 +86,17 @@ async function awardCredits(
   const cleanAddress = normalizeWallet(walletAddress)
   const creditsEarned = Math.floor(usdcAmount * rate) + bonusPoints
 
+  // Check if user_credits table exists
+  const { error: tableCheckError } = await supabase
+    .from('user_credits')
+    .select('credits')
+    .limit(1)
+
+  if (tableCheckError) {
+    console.error('user_credits table not found:', tableCheckError)
+    throw new Error('Credits table not set up. Please run the SQL setup script.')
+  }
+
   const { data: existingUser, error: fetchError } = await supabase
     .from('user_credits')
     .select('credits')
@@ -216,27 +227,39 @@ export function SendUSDC() {
 
         if (referrerWallet) {
           try {
-            await supabase.from('referral_relationships').insert({
-              referral_code: referralCode || null,
-              referred_wallet_address: walletAddress,
-              referrer_wallet_address: normalizeWallet(referrerWallet),
-              total_referred_amount: amount,
-            })
+            // Check if referral tables exist before processing
+            const { error: tableCheckError } = await supabase
+              .from('referral_relationships')
+              .select('id')
+              .limit(1)
 
-            const referrerBonus = Math.floor(basePoints * 0.2)
-
-            if (referrerBonus > 0) {
-              await awardCredits(referrerWallet, 0, 0, referrerBonus)
-              await supabase.from('referral_earnings').insert({
-                referrer_wallet_address: normalizeWallet(referrerWallet),
+            if (tableCheckError) {
+              console.error('Referral tables not found, skipping referral processing:', tableCheckError)
+              // Don't fail the transaction if referral tables don't exist
+            } else {
+              await supabase.from('referral_relationships').insert({
+                referral_code: referralCode || null,
                 referred_wallet_address: walletAddress,
-                transaction_id: pendingTransactionId,
-                earned_amount: amount,
-                earned_points: referrerBonus,
+                referrer_wallet_address: normalizeWallet(referrerWallet),
+                total_referred_amount: amount,
               })
+
+              const referrerBonus = Math.floor(basePoints * 0.2)
+
+              if (referrerBonus > 0) {
+                await awardCredits(referrerWallet, 0, 0, referrerBonus)
+                await supabase.from('referral_earnings').insert({
+                  referrer_wallet_address: normalizeWallet(referrerWallet),
+                  referred_wallet_address: walletAddress,
+                  transaction_id: pendingTransactionId,
+                  earned_amount: amount,
+                  earned_points: referrerBonus,
+                })
+              }
             }
           } catch (referralError) {
             console.error('Referral processing failed:', referralError)
+            // Don't fail the transaction if referral processing fails
           }
         }
 
@@ -342,50 +365,66 @@ export function SendUSDC() {
 
       if (cleanedReferralCode) {
         try {
+          // Check if referral tables exist
+          const { error: tableCheckError } = await supabase
+            .from('referral_codes')
+            .select('code')
+            .limit(1)
+
+          if (tableCheckError) {
+            console.error('Referral tables not found:', tableCheckError)
+            throw new Error('Referral system not set up. Please run the SQL setup script in Supabase.')
+          }
+
+          // Try SQL function first
           const { data: validation, error: validationError } =
             await supabase.rpc('validate_referral_code', {
               code: cleanedReferralCode,
               user_wallet: walletAddress,
             })
 
-          if (validationError) throw validationError
+          if (!validationError && validation) {
+            const result = validation?.[0]
+            if (!result?.is_valid) {
+              throw new Error(result?.error_message || 'Invalid referral code.')
+            }
 
-          const result = validation?.[0]
-          if (!result?.is_valid) {
-            throw new Error(result?.error_message || 'Invalid referral code.')
+            referrerWallet = result.referrer_wallet
+              ? normalizeWallet(result.referrer_wallet)
+              : null
+          } else {
+            // Fallback to client-side validation
+            const { data: codeData, error: codeError } = await supabase
+              .from('referral_codes')
+              .select('referrer_wallet_address')
+              .eq('code', cleanedReferralCode)
+              .eq('is_active', true)
+              .maybeSingle()
+
+            if (codeError || !codeData) {
+              throw new Error('Invalid or inactive referral code.')
+            }
+
+            const codeOwner = normalizeWallet(codeData.referrer_wallet_address)
+            if (codeOwner === walletAddress) {
+              throw new Error('You cannot use your own referral code.')
+            }
+
+            const { data: existingReferral } = await supabase
+              .from('referral_relationships')
+              .select('id')
+              .eq('referred_wallet_address', walletAddress)
+              .maybeSingle()
+
+            if (existingReferral) {
+              throw new Error('You have already used a referral code.')
+            }
+
+            referrerWallet = codeOwner
           }
-
-          referrerWallet = result.referrer_wallet
-            ? normalizeWallet(result.referrer_wallet)
-            : null
-        } catch {
-          const { data: codeData, error: codeError } = await supabase
-            .from('referral_codes')
-            .select('referrer_wallet_address')
-            .eq('code', cleanedReferralCode)
-            .eq('is_active', true)
-            .maybeSingle()
-
-          if (codeError || !codeData) {
-            throw new Error('Invalid or inactive referral code.')
-          }
-
-          const codeOwner = normalizeWallet(codeData.referrer_wallet_address)
-          if (codeOwner === walletAddress) {
-            throw new Error('You cannot use your own referral code.')
-          }
-
-          const { data: existingReferral } = await supabase
-            .from('referral_relationships')
-            .select('id')
-            .eq('referred_wallet_address', walletAddress)
-            .maybeSingle()
-
-          if (existingReferral) {
-            throw new Error('You have already used a referral code.')
-          }
-
-          referrerWallet = codeOwner
+        } catch (referralError) {
+          console.error('Referral validation failed:', referralError)
+          throw referralError
         }
       }
 

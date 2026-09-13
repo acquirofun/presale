@@ -74,6 +74,19 @@ export function ReferralCodeGenerator({
       setError(null)
 
       try {
+        // Check if transactions table exists
+        const { error: tableCheckError } = await supabase
+          .from('transactions')
+          .select('amount')
+          .limit(1)
+
+        if (tableCheckError) {
+          console.error('Transactions table not found:', tableCheckError)
+          setError('Database tables not set up. Please run the SQL setup script.')
+          setLoading(false)
+          return
+        }
+
         const { data: transactions, error: transactionsError } =
           await supabase
             .from('transactions')
@@ -145,6 +158,19 @@ export function ReferralCodeGenerator({
     setError(null)
 
     try {
+      // Check if referral_codes table exists
+      const { error: tableCheckError } = await supabase
+        .from('referral_codes')
+        .select('code')
+        .limit(1)
+
+      if (tableCheckError) {
+        console.error('Referral table not found:', tableCheckError)
+        setError('Referral system not set up. Please run the SQL setup script in Supabase.')
+        setGenerating(false)
+        return
+      }
+
       /**
        * Prefer the database RPC because uniqueness should ultimately
        * be enforced by the database, not the browser.
