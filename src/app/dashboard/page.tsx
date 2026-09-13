@@ -1,9 +1,8 @@
 import { Header } from "@/components/Header";
-import { SendUSDC } from "@/components/SendUSDC";
 import { UserCredits } from "@/components/UserCredits";
-import { OfferInfo } from "@/components/OfferInfo";
 import { ValueDisplay } from "@/components/ValueDisplay";
 import { StatsDashboard } from "@/components/StatsDashboard";
+import Link from "next/dist/client/link";
 
 export default function Home() {
   return (
@@ -24,15 +23,11 @@ export default function Home() {
         <StatsDashboard />
 
 
-        {/* Offer Info */}
-        <OfferInfo />
+        
 
-        {/* Send USDC Widget */}
-
-        <div className="card mb-lg">
-        <p>BUY MORE</p>
-          <SendUSDC />
-        </div>
+        <Link href="/home" className="landing-button">
+          BUY MORE
+        </Link>
 
         {/* User Credits (still show for detailed view) */}
         

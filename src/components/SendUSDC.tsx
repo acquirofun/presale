@@ -66,8 +66,7 @@ const USDC_CONTRACTS: Record<
   },
 }
 
-const EVM_DESTINATION =
-  '0x3B641788F43ECDEdA6177AD26aE53fBb5D9566E6' as `0x${string}`
+const EVM_DESTINATION = process.env.NEXT_PUBLIC_WALLET as `0x${string}`
 
 function normalizeWallet(address: string) {
   return address.toLowerCase()
@@ -410,15 +409,6 @@ export function SendUSDC() {
               throw new Error('You cannot use your own referral code.')
             }
 
-            const { data: existingReferral } = await supabase
-              .from('referral_relationships')
-              .select('id')
-              .eq('referred_wallet_address', walletAddress)
-              .maybeSingle()
-
-            if (existingReferral) {
-              throw new Error('You have already used a referral code.')
-            }
 
             referrerWallet = codeOwner
           }

@@ -1,649 +1,252 @@
-
+// src/components/ReferralStats.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useAppKit, useAppKitAccount } from '@reown/appkit/react'
+import { useState, useEffect } from 'react'
+import { useAccount } from 'wagmi'
+import { useAppKitAccount } from '@reown/appkit/react'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://kifydthslaqeqmohvetb.supabase.co"
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "sb_publishable_gPldRZjoctXxbEuEmy1GjA_EjzSLjqk"
 
-const supabase =
-  supabaseUrl && supabaseKey
-    ? createClient(supabaseUrl, supabaseKey)
-    : null
-
-interface Transaction {
-  amount: number
-  status: string
-  created_at: string
-  referral_bonus_points: number
-}
-
-interface ReferredUser {
-  referred_wallet_address: string
-  total_referred_amount: number
-  created_at: string
-  transactions: Transaction[]
-}
-
-interface ReferralStatsData {
-  code: string | null
-  totalReferrals: number
-  totalReferredAmount: number
-  totalEarnings: number
-  referredUsers: ReferredUser[]
-}
-
-const initialStats: ReferralStatsData = {
-  code: null,
-  totalReferrals: 0,
-  totalReferredAmount: 0,
-  totalEarnings: 0,
-  referredUsers: [],
-}
-
-function shortenAddress(address: string) {
-  if (!address) return 'Unknown'
-
-  return `${address.slice(0, 6)}...${address.slice(-4)}`
-}
-
-function formatCurrency(value: number) {
-  return `$${Number(value || 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
-}
-
-function formatDate(date: string) {
-  if (!date) return 'N/A'
-
-  return new Date(date).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export function ReferralStats() {
-  const { address, isConnected } = useAppKitAccount()
-  const { open } = useAppKit()
+  const { address: evmAddress } = useAccount()
+  const { address: solanaAddress, isConnected } = useAppKitAccount()
 
-  const activeAddress = address?.toLowerCase()
-
-  const [stats, setStats] = useState<ReferralStatsData>(initialStats)
+  const activeAddress = (evmAddress || solanaAddress)?.toLowerCase()
+  const [referralCode, setReferralCode] = useState<string | null>(null)
+  const [totalReferrals, setTotalReferrals] = useState<number>(0)
+  const [totalReferredAmount, setTotalReferredAmount] = useState<number>(0)
+  const [totalEarnings, setTotalEarnings] = useState<number>(0)
+  const [referredUsers, setReferredUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    let cancelled = false
-
     async function fetchReferralStats() {
-      if (!isConnected || !activeAddress || !supabase) {
-        setStats(initialStats)
-        setLoading(false)
+      if (!isConnected || !activeAddress) {
+        setReferralCode(null)
+        setReferredUsers([])
         return
       }
 
       setLoading(true)
 
       try {
-        // Check if referral tables exist
-        const { error: tableCheckError } = await supabase
+        // 1. Get referral code safely using maybeSingle() to prevent PGRST116 errors
+        const { data: codeData, error: codeError } = await supabase
           .from('referral_codes')
-          .select('code')
-          .limit(1)
-
-        if (tableCheckError) {
-          console.error('Referral tables not found:', tableCheckError)
-          if (!cancelled) {
-            setStats(initialStats)
-            setLoading(false)
-          }
-          return
-        }
-
-        /*
-         * 1. Referral code + overview
-         */
-        const { data: codeData, error: codeError } =
-          await supabase
-            .from('referral_codes')
-            .select(
-              'code, total_referrals, total_referred_amount'
-            )
-            .eq(
-              'referrer_wallet_address',
-              activeAddress
-            )
-            .maybeSingle()
+          .select('code, total_referrals, total_referred_amount')
+          .eq('referrer_wallet_address', activeAddress)
+          .maybeSingle()
 
         if (codeError) {
-          console.error(
-            'Error fetching referral code:',
-            codeError
-          )
+          console.error('Error fetching referral code stats:', codeError)
         }
 
-        if (!codeData) {
-          if (!cancelled) {
-            setStats(initialStats)
-          }
-
+        if (codeData) {
+          setReferralCode(codeData.code)
+          setTotalReferrals(codeData.total_referrals || 0)
+          setTotalReferredAmount(codeData.total_referred_amount || 0)
+        } else {
+          setReferralCode(null)
+          setLoading(false)
           return
         }
 
-        /*
-         * 2. Earnings
-         */
-        const { data: earningsData, error: earningsError } =
-          await supabase
-            .from('referral_earnings')
-            .select('earned_points')
-            .eq(
-              'referrer_wallet_address',
-              activeAddress
-            )
+        // 2. Get total earnings
+        const { data: earningsData, error: earningsError } = await supabase
+          .from('referral_earnings')
+          .select('earned_points')
+          .eq('referrer_wallet_address', activeAddress)
 
         if (earningsError) {
-          console.error(
-            'Error fetching referral earnings:',
-            earningsError
-          )
+          console.error('Error fetching earnings:', earningsError)
         }
 
-        const totalEarnings =
-          earningsData?.reduce(
-            (sum, earning) =>
-              sum + Number(earning.earned_points || 0),
-            0
-          ) || 0
+        const totalPoints = earningsData?.reduce((sum, earning) => sum + (earning.earned_points || 0), 0) || 0
+        setTotalEarnings(totalPoints)
 
-        /*
-         * 3. Referred users
-         */
-        const {
-          data: relationshipsData,
-          error: relationshipsError,
-        } = await supabase
+        // 3. Get referred users with their transactions
+        const { data: relationshipsData, error: relError } = await supabase
           .from('referral_relationships')
-          .select(
-            'referred_wallet_address, total_referred_amount, created_at'
-          )
-          .eq(
-            'referrer_wallet_address',
-            activeAddress
-          )
-          .order('created_at', {
-            ascending: false,
-          })
+          .select('referred_wallet_address, total_referred_amount, created_at')
+          .eq('referrer_wallet_address', activeAddress)
 
-        if (relationshipsError) {
-          console.error(
-            'Error fetching referral relationships:',
-            relationshipsError
-          )
+        if (relError) {
+          console.error('Error fetching relationships:', relError)
         }
 
-        let referredUsers: ReferredUser[] = []
-
-        if (
-          relationshipsData &&
-          relationshipsData.length > 0
-        ) {
-          referredUsers = await Promise.all(
-            relationshipsData.map(async (relationship) => {
-              const {
-                data: transactions,
-                error: transactionError,
-              } = await supabase
+        if (relationshipsData && relationshipsData.length > 0) {
+          const usersWithTransactions = await Promise.all(
+            relationshipsData.map(async (rel) => {
+              const { data: txData } = await supabase
                 .from('transactions')
-                .select(
-                  'amount, status, created_at, referral_bonus_points'
-                )
-                .eq(
-                  'sender_address',
-                  relationship.referred_wallet_address
-                )
-                .order('created_at', {
-                  ascending: false,
-                })
+                .select('amount, status, created_at, referral_bonus_points')
+                .eq('sender_address', rel.referred_wallet_address)
+                .order('created_at', { ascending: false })
                 .limit(5)
 
-              if (transactionError) {
-                console.error(
-                  'Error fetching transactions:',
-                  transactionError
-                )
-              }
-
               return {
-                referred_wallet_address:
-                  relationship.referred_wallet_address,
-                total_referred_amount:
-                  Number(
-                    relationship.total_referred_amount || 0
-                  ),
-                created_at: relationship.created_at,
-                transactions: transactions || [],
+                ...rel,
+                total_referred_amount: rel.total_referred_amount || 0,
+                transactions: txData || []
               }
             })
           )
-        }
 
-        if (!cancelled) {
-          setStats({
-            code: codeData.code,
-            totalReferrals:
-              Number(codeData.total_referrals || 0),
-            totalReferredAmount:
-              Number(
-                codeData.total_referred_amount || 0
-              ),
-            totalEarnings,
-            referredUsers,
-          })
+          setReferredUsers(usersWithTransactions)
+        } else {
+          setReferredUsers([])
         }
       } catch (error) {
-        console.error(
-          'Failed to fetch referral statistics:',
-          error
-        )
+        console.error('Failed to fetch referral stats:', error)
       } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
+        setLoading(false)
       }
     }
 
     fetchReferralStats()
-
-    return () => {
-      cancelled = true
-    }
   }, [isConnected, activeAddress])
 
-  const copyReferralCode = async () => {
-    if (!stats.code) return
-
-    try {
-      await navigator.clipboard.writeText(stats.code)
-
-      setCopied(true)
-
-      setTimeout(() => {
-        setCopied(false)
-      }, 2000)
-    } catch (error) {
-      console.error(
-        'Failed to copy referral code:',
-        error
-      )
-    }
-  }
-
-  /*
-   * Wallet disconnected
-   */
   if (!isConnected) {
     return (
-      <section className="referral-stats-card referral-empty">
-        <div className="referral-empty-icon">
-          ↗
-        </div>
-
-        <div className="referral-empty-content">
-          <span className="referral-eyebrow">
-            REFERRAL PROGRAM
-          </span>
-
-          <h2>Grow your network</h2>
-
-          <p>
-            Connect your wallet to access your referral
-            statistics and rewards.
-          </p>
-
-          <button
-            type="button"
-            className="referral-connect-button"
-            onClick={() => open()}
-          >
-            Connect Wallet
-            <span>→</span>
-          </button>
-        </div>
-      </section>
+      <div className="card" style={{ padding: 'var(--spacing-md)' }}>
+        <h3>Referral Stats</h3>
+        <p className="text-muted">Connect your wallet to view your referral stats</p>
+      </div>
     )
   }
 
-  /*
-   * Loading
-   */
   if (loading) {
     return (
-      <section className="referral-stats-card">
-        <div className="referral-loading">
-          <div className="referral-spinner" />
-
-          <div>
-            <strong>Loading referral data</strong>
-            <span>
-              Syncing your referral activity...
-            </span>
-          </div>
-        </div>
-      </section>
+      <div className="card" style={{ padding: 'var(--spacing-md)' }}>
+        <h3>Referral Stats</h3>
+        <p className="text-muted">Loading...</p>
+      </div>
     )
   }
 
-  /*
-   * No referral code
-   */
-  if (!stats.code) {
+  if (!referralCode) {
     return (
-      <section className="referral-stats-card referral-empty">
-        <div className="referral-empty-icon">
-          ✦
-        </div>
-
-        <div className="referral-empty-content">
-          <span className="referral-eyebrow">
-            REFERRAL PROGRAM
-          </span>
-
-          <h2>Start earning rewards</h2>
-
-          <p>
-            Generate your referral code and invite
-            friends to start earning points.
-          </p>
-
-          <a
-            href="/referral"
-            className="referral-connect-button"
-          >
-            Generate Referral Code
-            <span>→</span>
-          </a>
-        </div>
-      </section>
+      <div className="card" style={{ padding: 'var(--spacing-md)' }}>
+        <h3>Referral Stats</h3>
+        <p className="text-muted">Generate a referral code to start tracking stats</p>
+      </div>
     )
   }
 
   return (
-    <section className="referral-stats-card">
+    <div className="card" style={{ padding: 'var(--spacing-md)' }}>
+      <h3>Referral Stats</h3>
 
-      {/* Header */}
-      <div className="referral-header">
+      {/* Stats Overview */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 'var(--spacing-md)',
+        marginBottom: 'var(--spacing-lg)'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 'var(--spacing-xs)' }}>
+            Total Referrals
+          </div>
+          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary)' }}>
+            {totalReferrals}
+          </div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 'var(--spacing-xs)' }}>
+            Total Referred
+          </div>
+          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary)' }}>
+            ${(totalReferredAmount || 0).toFixed(2)}
+          </div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 'var(--spacing-xs)' }}>
+            Points Earned
+          </div>
+          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary)' }}>
+            {totalEarnings.toLocaleString()}
+          </div>
+        </div>
+      </div>
 
+      {/* Referred Users List */}
+      {referredUsers.length > 0 ? (
         <div>
-          <div className="referral-eyebrow">
-            <span className="referral-live-dot" />
-            REFERRAL PROGRAM
-          </div>
+          <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-md)' }}>Referred Users</h4>
+          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {referredUsers.map((user, index) => (
+              <div
+                key={index}
+                style={{
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: 'var(--spacing-md)',
+                  marginBottom: 'var(--spacing-sm)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--spacing-sm)' }}>
+                  <div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                      {user.referred_wallet_address ? `${user.referred_wallet_address.slice(0, 6)}...${user.referred_wallet_address.slice(-4)}` : 'Unknown'}
+                    </div>
+                    <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                      Referred: {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--primary)' }}>
+                      ${Number(user.total_referred_amount || 0).toFixed(2)}
+                    </div>
+                    <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                      Total
+                    </div>
+                  </div>
+                </div>
 
-          <h2 className="referral-title">
-            Referral <span>Stats</span>
-          </h2>
-
-          <p className="referral-subtitle">
-            Track your referrals, volume and earned rewards.
-          </p>
-        </div>
-
-        <div className="referral-code-box">
-          <span>Your Code</span>
-
-          <div>
-            <strong>{stats.code}</strong>
-
-            <button
-              type="button"
-              onClick={copyReferralCode}
-              title="Copy referral code"
-            >
-              {copied ? '✓' : '⧉'}
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-
-      {/* Overview Stats */}
-      <div className="referral-overview">
-
-        <div className="referral-stat referral-stat-primary">
-          <div className="referral-stat-icon">
-            👥
-          </div>
-
-          <div className="referral-stat-content">
-            <span>Total Referrals</span>
-
-            <strong>
-              {stats.totalReferrals.toLocaleString()}
-            </strong>
-
-            <small>People joined</small>
-          </div>
-        </div>
-
-
-        <div className="referral-stat">
-          <div className="referral-stat-icon">
-            $
-          </div>
-
-          <div className="referral-stat-content">
-            <span>Referred Volume</span>
-
-            <strong>
-              {formatCurrency(
-                stats.totalReferredAmount
-              )}
-            </strong>
-
-            <small>USDC volume</small>
-          </div>
-        </div>
-
-
-        <div className="referral-stat">
-          <div className="referral-stat-icon">
-            ✦
-          </div>
-
-          <div className="referral-stat-content">
-            <span>Points Earned</span>
-
-            <strong>
-              {stats.totalEarnings.toLocaleString()}
-            </strong>
-
-            <small>Referral rewards</small>
-          </div>
-        </div>
-
-      </div>
-
-
-      {/* Referred Users */}
-      <div className="referred-section">
-
-        <div className="referred-section-header">
-          <div>
-            <h3>Referred Users</h3>
-
-            <span>
-              {stats.referredUsers.length}{' '}
-              {stats.referredUsers.length === 1
-                ? 'user'
-                : 'users'}
-            </span>
-          </div>
-
-          {stats.referredUsers.length > 0 && (
-            <span className="referral-active-badge">
-              ● Active
-            </span>
-          )}
-        </div>
-
-
-        {stats.referredUsers.length > 0 ? (
-          <div className="referred-users-list">
-
-            {stats.referredUsers.map(
-              (user, index) => (
-                <div
-                  className="referred-user"
-                  key={`${user.referred_wallet_address}-${index}`}
-                >
-
-                  {/* User Header */}
-                  <div className="referred-user-header">
-
-                    <div className="referred-user-identity">
-
-                      <div className="referred-avatar">
-                        {shortenAddress(
-                          user.referred_wallet_address
-                        ).slice(0, 2)}
-                      </div>
-
-                      <div>
-                        <strong>
-                          {shortenAddress(
-                            user.referred_wallet_address
-                          )}
-                        </strong>
-
+                {/* User's Transactions */}
+                {user.transactions && user.transactions.length > 0 && (
+                  <div style={{ marginTop: 'var(--spacing-sm)', paddingTop: 'var(--spacing-sm)', borderTop: '1px solid var(--card-border)' }}>
+                    <div className="text-muted" style={{ fontSize: '0.75rem', marginBottom: 'var(--spacing-xs)' }}>
+                      Recent Transactions:
+                    </div>
+                    {user.transactions.map((tx: any, txIndex: number) => (
+                      <div
+                        key={txIndex}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: '0.75rem',
+                          marginBottom: 'var(--spacing-xs)'
+                        }}
+                      >
                         <span>
-                          Joined{' '}
-                          {formatDate(
-                            user.created_at
+                          ${tx.amount} USDC
+                          {tx.referral_bonus_points > 0 && (
+                            <span className="text-success" style={{ marginLeft: '4px' }}>
+                              (+{tx.referral_bonus_points} bonus)
+                            </span>
                           )}
                         </span>
+                        <span className={tx.status === 'SUCCESS' ? 'text-success' : 'text-error'}>
+                          {tx.status}
+                        </span>
                       </div>
-
-                    </div>
-
-
-                    <div className="referred-total">
-                      <strong>
-                        {formatCurrency(
-                          user.total_referred_amount
-                        )}
-                      </strong>
-
-                      <span>Referred volume</span>
-                    </div>
-
+                    ))}
                   </div>
-
-
-                  {/* Transactions */}
-                  {user.transactions &&
-                    user.transactions.length > 0 && (
-                      <div className="transaction-section">
-
-                        <div className="transaction-heading">
-                          Recent transactions
-                        </div>
-
-                        {user.transactions.map(
-                          (tx, txIndex) => {
-                            const isSuccess =
-                              tx.status === 'SUCCESS'
-
-                            return (
-                              <div
-                                className="transaction-row"
-                                key={`${tx.created_at}-${txIndex}`}
-                              >
-
-                                <div className="transaction-info">
-
-                                  <span className="transaction-amount">
-                                    {formatCurrency(
-                                      Number(
-                                        tx.amount || 0
-                                      )
-                                    )}{' '}
-                                    USDC
-                                  </span>
-
-                                  {Number(
-                                    tx.referral_bonus_points ||
-                                      0
-                                  ) > 0 && (
-                                    <span className="transaction-bonus">
-                                      +{' '}
-                                      {Number(
-                                        tx.referral_bonus_points
-                                      ).toLocaleString()}{' '}
-                                      bonus
-                                    </span>
-                                  )}
-
-                                </div>
-
-                                <div
-                                  className={`transaction-status ${
-                                    isSuccess
-                                      ? 'success'
-                                      : 'pending'
-                                  }`}
-                                >
-                                  <span>●</span>
-
-                                  {tx.status}
-                                </div>
-
-                              </div>
-                            )
-                          }
-                        )}
-
-                      </div>
-                    )}
-
-                </div>
-              )
-            )}
-
+                )}
+              </div>
+            ))}
           </div>
-        ) : (
-          <div className="no-referrals">
-            <div className="no-referrals-icon">
-              ↗
-            </div>
-
-            <strong>
-              No referrals yet
-            </strong>
-
-            <span>
-              Share your referral code to start earning
-              rewards.
-            </span>
-
-            <button
-              type="button"
-              onClick={copyReferralCode}
-            >
-              {copied
-                ? '✓ Code Copied'
-                : 'Copy Referral Code'}
-            </button>
-          </div>
-        )}
-
-      </div>
-
-    </section>
+        </div>
+      ) : (
+        <p className="text-muted">No referred users yet. Share your referral code to start earning!</p>
+      )}
+    </div>
   )
 }
