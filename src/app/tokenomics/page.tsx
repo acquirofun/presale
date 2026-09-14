@@ -9,7 +9,7 @@ export default function Home() {
     <main className="container" style={{ marginTop: 'var(--spacing-xl)', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
       <StatsDashboard />
       <a href="/home/#buy-usdc-widget" className="landing-button" >
-          BUY MORE
+          BUY MORE & MORE
         </a>
     </main>
     </div>
