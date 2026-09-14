@@ -3,7 +3,7 @@
 // Initial rate: 10,000 points per USDC
 // Rate decrease: 250 points every 3 days
 
-const START_DATE = new Date('2026-09-02T23:59:00Z');
+const START_DATE = new Date('2026-09-13T23:59:00Z');
 const INITIAL_RATE = 10000;
 const RATE_DECREASE = 250;
 const PERIOD_DAYS = 3;

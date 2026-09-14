@@ -254,6 +254,42 @@ export function Header() {
           Whitepapers
         </a>
 
+        <a
+          href="/about"
+          className="mobile-nav-link"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span className="mobile-nav-icon">↗</span>
+          About
+        </a>
+
+        <a
+          href="/roadmap"
+          className="mobile-nav-link"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span className="mobile-nav-icon">↗</span>
+          Roadmap
+        </a>
+
+        <a
+          href="/faq"
+          className="mobile-nav-link"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span className="mobile-nav-icon">↗</span>
+          FAQ
+        </a>
+        
+        <a
+          href="/contact"
+          className="mobile-nav-link"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span className="mobile-nav-icon">↗</span>
+          Contact
+        </a>
+
         
         
       </div>

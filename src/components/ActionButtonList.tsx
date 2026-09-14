@@ -86,7 +86,7 @@ export const ActionButtonList = () => {
 
             <div className="network-info">
               <strong>Base</strong>
-              <span>USDC / USDT</span>
+              <span>USDC</span>
             </div>
 
             <span className="network-chevron">
@@ -110,7 +110,7 @@ export const ActionButtonList = () => {
 
             <div className="network-info">
               <strong>Polygon</strong>
-              <span>USDC / USDT</span>
+              <span>USDC</span>
             </div>
 
             <span className="network-chevron">
@@ -134,7 +134,7 @@ export const ActionButtonList = () => {
 
             <div className="network-info">
               <strong>BNB Chain</strong>
-              <span>USDC / USDT</span>
+              <span>USDC</span>
             </div>
 
             <span className="network-chevron">
