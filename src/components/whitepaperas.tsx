@@ -29,10 +29,10 @@ const roadmapPhases = [
 ];
 
 const valuationData = [
-  { supply: '50,000,000 PTS', price: '$0.04', fdv: '$2,000,000' },
-  { supply: '100,000,000 PTS', price: '$0.04', fdv: '$4,000,000' },
-  { supply: '250,000,000 PTS', price: '$0.04', fdv: '$10,000,000' },
-  { supply: '500,000,000 PTS', price: '$0.04', fdv: '$20,000,000' },
+  { supply: '50,000,000 SWC', price: '$0.04', fdv: '$2,000,000' },
+  { supply: '100,000,000 SWC', price: '$0.04', fdv: '$4,000,000' },
+  { supply: '250,000,000 SWC', price: '$0.04', fdv: '$10,000,000' },
+  { supply: '500,000,000 SWC', price: '$0.04', fdv: '$20,000,000' },
 ];
 
 export function Whitepaper() {
@@ -46,8 +46,8 @@ export function Whitepaper() {
 
   const downloadPDF = () => {
     const link = document.createElement('a');
-    link.href = '/PointSwap_Whitepaper.pdf';
-    link.download = 'PointSwap_Whitepaper.pdf';
+    link.href = '/SwapCredits_Whitepaper.pdf';
+    link.download = 'SwapCredits_Whitepaper.pdf';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -66,7 +66,7 @@ export function Whitepaper() {
           </div>
 
           <h1 style={{ fontSize: '3.5rem', fontWeight: '900', color: '#fff', margin: '0 0 1rem 0' }}>
-            Point<span style={{ color: '#00ff88' }}>Swap (PTS)</span>
+            Point<span style={{ color: '#00ff88' }}>Swap (SWC)</span>
           </h1>
           <p style={{ color: '#a1a1aa', fontSize: '1.1rem', maxWidth: '700px', lineHeight: '1.6' }}>
             An advanced blockchain-based token project designed around a transparent, dynamic supply model and structured token distribution framework.
@@ -131,27 +131,27 @@ export function Whitepaper() {
           
           {/* Section 1 */}
           <SectionCard id="executive-summary" number="01" title="Executive Summary">
-            <p>PointSwap is an advanced blockchain-based token project designed around a transparent, dynamic supply model and a structured token distribution framework. The PointSwap ecosystem utilizes PTS as its native utility and governance-aligned asset.</p>
-            <p>The initial presale price is established at <strong>$0.04 USDC per PTS</strong>. Unlike conventional fixed-supply models where total supply is arbitrarily predetermined before fundraising, PointSwap utilizes a dynamic supply architecture. The final total token supply is calculated following the conclusion of the presale phase based on finalized participation metrics, maintaining strict, invariant percentage allocations across all categories.</p>
+            <p>SwapCredits is an advanced blockchain-based token project designed around a transparent, dynamic supply model and a structured token distribution framework. The SwapCredits ecosystem utilizes SWC as its native utility and governance-aligned asset.</p>
+            <p>The initial presale price is established at <strong>$0.04 USDC per SWC</strong>. Unlike conventional fixed-supply models where total supply is arbitrarily predetermined before fundraising, SwapCredits utilizes a dynamic supply architecture. The final total token supply is calculated following the conclusion of the presale phase based on finalized participation metrics, maintaining strict, invariant percentage allocations across all categories.</p>
           </SectionCard>
 
           {/* Section 2 */}
           <SectionCard id="vision" number="02" title="Vision & Core Philosophy">
-            <p>PointSwap aims to establish a transparent token ecosystem where participants can clearly understand how supply is determined, how tokens are distributed, and how long-term ecosystem stability is managed.</p>
+            <p>SwapCredits aims to establish a transparent token ecosystem where participants can clearly understand how supply is determined, how tokens are distributed, and how long-term ecosystem stability is managed.</p>
             <div style={{ background: 'rgba(0, 255, 136, 0.05)', borderLeft: '4px solid #00ff88', padding: '1rem', borderRadius: '0 12px 12px 0', marginTop: '1rem' }}>
               <p style={{ fontWeight: 'bold', color: '#fff', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '1px' }}>Core Principle</p>
-              <p style={{ margin: 0, fontStyle: 'italic' }}>Transparent mechanics before marketing. By publishing the exact mathematical relationship and allocation structures governing the token, PointSwap ensures complete clarity for all ecosystem participants.</p>
+              <p style={{ margin: 0, fontStyle: 'italic' }}>Transparent mechanics before marketing. By publishing the exact mathematical relationship and allocation structures governing the token, SwapCredits ensures complete clarity for all ecosystem participants.</p>
             </div>
           </SectionCard>
 
           {/* Section 3 */}
           <SectionCard id="dynamic-supply" number="03" title="Dynamic Token Supply Mechanism">
-            <h3 style={{ color: '#fff', fontSize: '1.1rem', margin: '0 0 0.5rem 0' }}>3.1 Why PointSwap Uses Dynamic Supply</h3>
-            <p>PointSwap implements a dynamic supply model to align token generation with actual ecosystem demand demonstrated during the presale phase, ensuring structural proportions remain mathematically locked.</p>
+            <h3 style={{ color: '#fff', fontSize: '1.1rem', margin: '0 0 0.5rem 0' }}>3.1 Why SwapCredits Uses Dynamic Supply</h3>
+            <p>SwapCredits implements a dynamic supply model to align token generation with actual ecosystem demand demonstrated during the presale phase, ensuring structural proportions remain mathematically locked.</p>
             
             <h3 style={{ color: '#fff', fontSize: '1.1rem', margin: '1rem 0 0.5rem 0' }}>3.2 How the Dynamic Supply Operates</h3>
             <ul style={{ paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <li>The presale price is fixed at $0.04 USDC per PTS.</li>
+              <li>The presale price is fixed at $0.04 USDC per SWC.</li>
               <li>The presale allocation represents exactly 30% of the final total token supply.</li>
               <li>Once the presale concludes and eligible contributions are verified, the final total token supply is calculated dynamically based on total tokens required to satisfy the 30% presale allocation.</li>
               <li>Consequently, all other allocation categories scale proportionally to match final calculated supply while percentage shares remain completely unchanged.</li>
@@ -195,7 +195,7 @@ export function Whitepaper() {
 
           {/* Section 5 */}
           <SectionCard id="valuation" number="05" title="Valuation & Transparency Matrix">
-            <p>Because PointSwap utilizes a dynamic supply model, the Fully Diluted Valuation (FDV) is directly tied to the final supply established at presale completion:</p>
+            <p>Because SwapCredits utilizes a dynamic supply model, the Fully Diluted Valuation (FDV) is directly tied to the final supply established at presale completion:</p>
             
             <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
@@ -233,7 +233,7 @@ export function Whitepaper() {
 
             <h3 style={{ color: '#fff', fontSize: '1.1rem', margin: '1rem 0 0.5rem 0' }}>6.2 Risk Factors & Disclaimers</h3>
             <div style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '12px', padding: '1rem' }}>
-              <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.6' }}>Digital assets involve substantial risk, including market volatility, smart-contract vulnerabilities, liquidity fluctuations, and regulatory shifts. Participants should independently evaluate the project. PointSwap makes no guarantees regarding future exchange listings, price appreciation, or market capitalizations.</p>
+              <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.6' }}>Digital assets involve substantial risk, including market volatility, smart-contract vulnerabilities, liquidity fluctuations, and regulatory shifts. Participants should independently evaluate the project. SwapCredits makes no guarantees regarding future exchange listings, price appreciation, or market capitalizations.</p>
             </div>
           </SectionCard>
 

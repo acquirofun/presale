@@ -141,7 +141,7 @@ export function CountdownTimer() {
         </h2>
 
         <p>
-          Secure your PTS (Pointswap Tokens) tokens before the
+          Secure your SWC (SwapCredits Tokens) tokens before the
           presale ends.
         </p>
 
