@@ -141,7 +141,7 @@ export function CountdownTimer() {
         </h2>
 
         <p>
-          Secure your FTT tokens before the
+          Secure your PTS (Pointswap Tokens) tokens before the
           presale ends.
         </p>
 
