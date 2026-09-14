@@ -6,8 +6,11 @@ export default function Home() {
     <div className="pages">
       <Header />
       
-    <main className="container">
+    <main className="container" style={{ marginTop: 'var(--spacing-xl)', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
       <StatsDashboard />
+      <a href="/home/#buy-usdc-widget" className="landing-button" >
+          BUY MORE
+        </a>
     </main>
     </div>
   );

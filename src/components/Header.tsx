@@ -80,7 +80,7 @@ export function Header() {
         <a href="/home" className="brand">
           <div className="brand-logo">
             <Image
-              src="/bnb.png"
+              src="/favicon.jpeg"
               alt="PointSwap"
               width={42}
               height={42}

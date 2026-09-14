@@ -145,6 +145,10 @@ export function CountdownTimer() {
           presale ends.
         </p>
 
+        <a href="#buy-usdc-widget" className="landing-button" style={{ margin: 'var(--spacing-lg) 0' }}>
+          BUY NOW
+        </a>
+
       </div>
 
 

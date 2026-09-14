@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, type ChangeEvent } from 'react'
@@ -87,7 +88,7 @@ export function StatsDashboard() {
   const liquidityMoney =
     simulationRaised * LP_MONEY_PERCENT
 
-  // LP tokens based on $0.01 launch price
+  // LP tokens based on $0.04 launch price
   const liquidityTokens =
     liquidityMoney / LAUNCH_PRICE
 
@@ -388,6 +389,46 @@ export function StatsDashboard() {
           }}
         />
 
+        {/* Numeric input */}
+
+        <div
+          style={{
+            marginTop: '16px',
+          }}
+        >
+          <input
+            type="number"
+            min={MIN_RAISED}
+            max={MAX_RAISED}
+            step={1}
+            value={simulationRaised}
+            onChange={(event) => {
+              const value = Number(event.target.value)
+
+              if (Number.isNaN(value)) return
+
+              setSimulationRaised(
+                Math.min(
+                  MAX_RAISED,
+                  Math.max(MIN_RAISED, value)
+                )
+              )
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 14px',
+              borderRadius: '10px',
+              border: '1px solid var(--border)',
+              background: 'var(--card)',
+              color: 'inherit',
+              fontSize: '0.95rem',
+              fontWeight: 700,
+              outline: 'none',
+            }}
+            aria-label="Simulated total raised"
+          />
+        </div>
+
         {/* Slider labels */}
 
         <div
@@ -662,7 +703,6 @@ export function StatsDashboard() {
               if (segment.name === 'Community') {
                 tokens = communityTokens
               }
-              
 
               if (segment.name === 'Locked 1 Year') {
                 tokens = lockedTokens

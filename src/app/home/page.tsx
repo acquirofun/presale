@@ -7,6 +7,7 @@ import { StatsDashboard } from "@/components/StatsDashboard";
 
 import { UserCreditsWithReferral } from "@/components/UserCredits";
 
+
 export default function Home() {
   return (
     <div className="pages">
@@ -18,11 +19,6 @@ export default function Home() {
           <CountdownTimer />
         </div>
 
-        {/* Stats Dashboard */}
-        <StatsDashboard />
-
-        
-
         {/* Network Actions */}
         <div className="card mb-lg">
           <ActionButtonList />
@@ -32,14 +28,19 @@ export default function Home() {
         <OfferInfo />
 
         {/* Send USDC Widget */}
-        <div className="card mb-lg">
+        <div className="card mb-lg" id="buy-usdc-widget">
           <SendUSDC />
         </div>
 
         {/* User Credits with Referral Link */}
+
+        {/* Stats Dashboard */}
+        <StatsDashboard />
+
         <div className="card mb-lg">
           <UserCreditsWithReferral />
         </div>
+
       </div>
     </div>
   );

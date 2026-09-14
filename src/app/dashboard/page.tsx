@@ -12,9 +12,13 @@ export default function Home() {
       <div className="container" style={{ marginTop: 'var(--spacing-xl)' }}>
         {/* Hero Section with Countdown */}
 
-        <div className="card" style={{ marginBottom: 'var(--spacing-lg)' }}>
+        <div className="card" style={{ marginBottom: 'var(--spacing-lg)' , textAlign: 'center', justifyContent: 'center', alignItems: 'center'}}>
           <UserCredits />
+          <a href="/home/#buy-usdc-widget" className="landing-button">
+          BUY MORE
+        </a>
         </div>
+
 
         {/* Value Display Section */}
         <ValueDisplay />
@@ -24,10 +28,6 @@ export default function Home() {
 
 
         
-
-        <Link href="/home" className="landing-button">
-          BUY MORE
-        </Link>
 
         {/* User Credits (still show for detailed view) */}
         
