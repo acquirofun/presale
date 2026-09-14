@@ -11,7 +11,7 @@ type TimeLeft = {
 }
 
 const TARGET_DATE = new Date('2026-10-15T23:59:00Z').getTime()
-const START_DATE = new Date('2026-09-02T23:59:00Z').getTime()
+const START_DATE = new Date('2026-09-13T23:59:00Z').getTime()
 
 const initialTime: TimeLeft = {
   days: 0,

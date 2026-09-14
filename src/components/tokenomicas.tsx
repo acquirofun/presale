@@ -418,7 +418,7 @@ export function StatsDashboard() {
               width: '100%',
               padding: '12px 14px',
               borderRadius: '10px',
-              border: '1px solid var(--border)',
+              border: '2px dotted #00ff88',
               background: 'var(--card)',
               color: 'inherit',
               fontSize: '0.95rem',
@@ -436,7 +436,7 @@ export function StatsDashboard() {
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            marginTop: '8px',
+            marginTop: '0px',
             fontSize: '0.68rem',
           }}
         >
