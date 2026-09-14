@@ -2,7 +2,8 @@ import { Header } from "@/components/Header";
 import { UserCredits } from "@/components/UserCredits";
 import { ValueDisplay } from "@/components/ValueDisplay";
 import { StatsDashboard } from "@/components/StatsDashboard";
-import Link from "next/dist/client/link";
+
+
 
 export default function Home() {
   return (

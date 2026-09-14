@@ -37,9 +37,9 @@ export const metadata: Metadata = {
   publisher: "Pointswap",
 
   icons: {
-    icon: "/favicon.png",
-    shortcut: "/favicon.png",
-    apple: "/favicon.png",
+    icon: "/favicon.jpeg",
+    shortcut: "/favicon.jpeg",
+    apple: "/favicon.jpeg",
   },
 
   openGraph: {
