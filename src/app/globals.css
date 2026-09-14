@@ -2354,7 +2354,7 @@ label {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 100;
 
   width: 100%;
 
@@ -2394,17 +2394,17 @@ label {
 
 .header-inner {
   width: 100%;
-  max-width: 1400px;
+  max-width: 1000px; 
   min-height: 78px;
 
   margin: 0 auto;
   padding: 0 28px;
 
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 30px;
+  align-items: left;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 10px;
 }
 
 
@@ -2504,7 +2504,7 @@ label {
 .desktop-nav {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0px; 
 
   margin-left: auto;
   margin-right: auto;
@@ -2519,7 +2519,7 @@ label {
 
   text-decoration: none;
 
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
 
   border-radius: 9px;
@@ -2530,18 +2530,17 @@ label {
 }
 
 .nav-link:hover {
-  color: var(--text-primary);
+  color: var(--primary);
 
   background: rgba(255, 255, 255, 0.05);
 }
 
-.nav-link.active {
+.nav-link:active {
   color: var(--primary);
-
   background: rgba(0, 212, 170, 0.07);
 }
 
-.nav-link.active::after {
+.nav-link:active::after {
   content: '';
 
   position: absolute;
@@ -2561,6 +2560,7 @@ label {
   box-shadow:
     0 0 10px rgba(0, 212, 170, 0.7);
 }
+
 
 
 /* =========================================
@@ -5936,7 +5936,67 @@ label {
   }
 }
 
+.more-menu {
+  position: relative;
+}
 
+.more-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  padding: 8px 12px;
+}
+
+.more-arrow {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.more-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 170px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-5px);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.more-dropdown a {
+  display: block;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: #222;
+  border-radius: 7px;
+}
+
+.more-dropdown a:hover {
+  background: #f5f5f5;
+}
+
+/* Show dropdown when hovering */
+.more-menu:hover .more-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.more-menu:hover .more-arrow {
+  transform: rotate(180deg);
+}
 
 
 

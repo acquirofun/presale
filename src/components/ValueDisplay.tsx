@@ -50,7 +50,7 @@ export function ValueDisplay() {
   }, [isConnected, address])
 
   // Hypothetical values for listing and moon
-  const listingPrice = 0.01 // $0.01 per credit
+  const listingPrice = 0.04 // $0.04 per credit
   const moonPrice = 0.10 // $0.10 per credit
   
   const listingValue = userCredits * listingPrice
@@ -93,12 +93,29 @@ export function ValueDisplay() {
         </div>
       </div>
 
-      <div className="value-card" style={{ background: '#DF301C', color: '#000' }}>
-        <div className="value-label">Refer & Earn</div>
-        <div className="value-amount">
-          <p>30% credits!</p>
+            <div className="value-card" style={{ 
+        background: '#18181b', 
+        border: '1px solid #27272a',
+        borderRadius: '12px',
+        padding: '16px',
+        color: '#f4f4f5' 
+      }}>
+        <div className="value-label" style={{ 
+          color: '#ef4444', 
+          fontWeight: '600', 
+          fontSize: '0.875rem',
+          marginBottom: '4px'
+        }}>
+          Refer & Earn
         </div>
-        <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+        
+        <div className="value-amount" style={{ margin: '8px 0' }}>
+          <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>
+            30% credits!
+          </p>
+        </div>
+        
+        <div className="text-muted" style={{ fontSize: '0.75rem', color: '#a1a1aa', lineHeight: '1.4' }}>
           Let&apos;s grow together! Share your referral link and earn extra credits when your friends join.
         </div>
       </div>

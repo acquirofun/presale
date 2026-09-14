@@ -95,19 +95,42 @@ export function Header() {
         </a>
 
         {/* Desktop Navigation */}
-        <nav className="desktop-nav">
-          <a href="/home" className="nav-link active">
-            <span>Home</span>
-          </a>
+         <nav className="desktop-nav">
+            <a href="/home" className="nav-link">
+              <span>Home</span>
+            </a>
 
-          <a href="/dashboard" className="nav-link">
-            <span>Dashboard</span>
-          </a>
+            <a href="/dashboard" className="nav-link">
+              <span>Dashboard</span>
+            </a>
 
-          <a href="/referral" className="nav-link">
-            <span>Referral</span>
-          </a>
-        </nav>
+            <a href="/referral" className="nav-link">
+              <span>Referral</span>
+            </a>
+
+            <a href="/tokenomics" className="nav-link">
+              <span>Tokenomics</span>
+            </a>
+
+            <a href="/whitepaper" className="nav-link">
+              <span>Whitepaper</span>
+            </a>
+
+            {/* More dropdown */}
+            <div className="more-menu">
+              <button className="more-button">
+                <span style={{ fontSize: '0.8rem' }}>More</span>
+                <span className="more-arrow">▾</span>
+              </button>
+
+              <div className="more-dropdown" style={{ fontSize: '0.8rem' }}>
+                <a href="/about">About</a>
+                <a href="/roadmap">Roadmap</a>
+                <a href="/faq">FAQ</a>
+                <a href="/contact">Contact</a>
+              </div>
+            </div>
+          </nav>
 
         {/* Right Section */}
         <div className="header-actions">
@@ -212,6 +235,27 @@ export function Header() {
           <span className="mobile-nav-icon">↗</span>
           Referral
         </a>
+
+        <a
+          href="/tokenomics"
+          className="mobile-nav-link"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span className="mobile-nav-icon">↗</span>
+          Tokenomics
+        </a>
+
+        <a
+          href="/whitepaper"
+          className="mobile-nav-link"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span className="mobile-nav-icon">↗</span>
+          Whitepapers
+        </a>
+
+        
+        
       </div>
     </header>
   )
