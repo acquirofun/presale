@@ -1369,7 +1369,7 @@ export function SendUSDC() {
                     }}
                   >
                     Referral Bonus
-                    (+10%)
+                    (+15%)
                   </span>
 
                   <span

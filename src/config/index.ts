@@ -1,4 +1,3 @@
-// src/config/index.ts
 import {
   bitcoin,
   bitcoinTestnet,
@@ -16,23 +15,41 @@ import {
   baseSepolia,
   solana,
   solanaDevnet,
+  ton,
+  tonTestnet,
 } from "@reown/appkit/networks";
+
 import type { AppKitNetwork } from "@reown/appkit/networks";
+
 import { BitcoinAdapter } from "@reown/appkit-adapter-bitcoin";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { SolanaAdapter } from "@reown/appkit-adapter-solana";
+import { TonAdapter } from "@reown/appkit-adapter-ton";
 
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID || "";
 
 export { projectId };
 
-export const bitcoinNetworks: [AppKitNetwork, ...AppKitNetwork[]] = [
+// ─────────────────────────────────────────────
+// Bitcoin
+// ─────────────────────────────────────────────
+
+export const bitcoinNetworks: [
+  AppKitNetwork,
+  ...AppKitNetwork[]
+] = [
   bitcoin,
   bitcoinTestnet,
 ];
 
-// Comprehensive list of major EVM Mainnets and Testnets
-export const evmNetworks: [AppKitNetwork, ...AppKitNetwork[]] = [
+// ─────────────────────────────────────────────
+// EVM
+// ─────────────────────────────────────────────
+
+export const evmNetworks: [
+  AppKitNetwork,
+  ...AppKitNetwork[]
+] = [
   mainnet,
   arbitrum,
   polygon,
@@ -47,18 +64,45 @@ export const evmNetworks: [AppKitNetwork, ...AppKitNetwork[]] = [
   baseSepolia,
 ];
 
-export const solanaNetworks: [AppKitNetwork, ...AppKitNetwork[]] = [
+// ─────────────────────────────────────────────
+// Solana
+// ─────────────────────────────────────────────
+
+export const solanaNetworks: [
+  AppKitNetwork,
+  ...AppKitNetwork[]
+] = [
   solana,
   solanaDevnet,
 ];
 
-export const networks = [
+// ─────────────────────────────────────────────
+// TON
+// ─────────────────────────────────────────────
+
+export const tonNetworks: [
+  AppKitNetwork,
+  ...AppKitNetwork[]
+] = [
+  ton,
+  tonTestnet,
+];
+
+// ─────────────────────────────────────────────
+// All networks
+// ─────────────────────────────────────────────
+
+export const networks: AppKitNetwork[] = [
   ...bitcoinNetworks,
   ...evmNetworks,
   ...solanaNetworks,
+  ...tonNetworks,
 ];
 
-// Set up Adapters
+// ─────────────────────────────────────────────
+// Adapters
+// ─────────────────────────────────────────────
+
 export const bitcoinAdapter = new BitcoinAdapter();
 
 export const wagmiAdapter = new WagmiAdapter({
@@ -68,3 +112,7 @@ export const wagmiAdapter = new WagmiAdapter({
 });
 
 export const solanaAdapter = new SolanaAdapter();
+
+export const tonAdapter = new TonAdapter({
+  projectId,
+});

@@ -4,6 +4,7 @@ import { SendUSDC } from "@/components/SendUSDC";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { OfferInfo } from "@/components/OfferInfo";
 import { StatsDashboard } from "@/components/StatsDashboard";
+import { SendTONUSDT } from "@/components/SendTONUSDT";
 
 import { UserCreditsWithReferral } from "@/components/UserCredits";
 
@@ -30,6 +31,7 @@ export default function Home() {
         {/* Send USDC Widget */}
         <div className="card mb-lg" id="buy-usdc-widget">
           <SendUSDC />
+          <SendTONUSDT />
         </div>
 
         {/* User Credits with Referral Link */}

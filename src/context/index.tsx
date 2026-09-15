@@ -1,4 +1,3 @@
-// src/context/index.tsx
 "use client";
 
 import {
@@ -7,18 +6,20 @@ import {
   evmNetworks,
   solanaAdapter,
   solanaNetworks,
+  tonAdapter,
+  tonNetworks,
   projectId,
   wagmiAdapter,
 } from "@/config";
 
 import { createAppKit } from "@reown/appkit/react";
-import React, { useState, type ReactNode } from "react";
-import type { AppKitNetwork } from "@reown/appkit/networks";
 
-import {
-  DefaultSIWX,
-  LocalStorage,
-} from "@reown/appkit-siwx";
+import React, {
+  useState,
+  type ReactNode,
+} from "react";
+
+import type { AppKitNetwork } from "@reown/appkit/networks";
 
 import {
   QueryClient,
@@ -27,33 +28,48 @@ import {
 
 import { WagmiProvider } from "wagmi";
 
-// Combine all networks
-const allNetworks: [AppKitNetwork, ...AppKitNetwork[]] = [
+// ─────────────────────────────────────────────
+// All supported networks
+// ─────────────────────────────────────────────
+
+const allNetworks: [
+  AppKitNetwork,
+  ...AppKitNetwork[]
+] = [
   ...evmNetworks,
   ...bitcoinNetworks,
   ...solanaNetworks,
+  ...tonNetworks,
 ];
 
+// ─────────────────────────────────────────────
 // AppKit metadata
+// ─────────────────────────────────────────────
+
 const metadata = {
-  name: "PointSwap",
-  description: "PointSwap presale",
-
-  // IMPORTANT:
-  // Change this to your actual website URL in production.
-  url: "https://github.com/0xonerb/next-reown-appkit-ssr",
-
+  name: "SwapCredits",
+  description: "SwapCredits presale",
+  url: "https://www.swapcredits.xyz",
   icons: [
-    "https://avatars.githubusercontent.com/u/179229932",
+    "/favicon.jpeg",
   ],
 };
 
-// Create AppKit once at module level
+// ─────────────────────────────────────────────
+// Reown AppKit
+// ─────────────────────────────────────────────
+//
+// SIWX is intentionally disabled for now.
+// This prevents the TON "The signature is not valid"
+// error while we verify TON wallet/payment separately.
+//
+
 export const modal = createAppKit({
   adapters: [
     bitcoinAdapter,
     wagmiAdapter,
     solanaAdapter,
+    tonAdapter,
   ],
 
   projectId: projectId || "",
@@ -69,16 +85,11 @@ export const modal = createAppKit({
     socials: [],
     email: false,
   },
-
-  // TEMPORARY DIAGNOSTIC:
-  // Use Reown's built-in browser LocalStorage.
-  // This removes Supabase from the SIWX process.
-  siwx: new DefaultSIWX({
-    storage: new LocalStorage({
-      key: "@appkit/siwx",
-    }),
-  }),
 });
+
+// ─────────────────────────────────────────────
+// React providers
+// ─────────────────────────────────────────────
 
 function ContextProvider({
   children,
