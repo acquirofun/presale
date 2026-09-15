@@ -1,26 +1,129 @@
+
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAppKitAccount } from '@reown/appkit/react'
+import {
+  useAppKitAccount,
+  useAppKitProvider,
+} from '@reown/appkit/react'
 
 import { calculateCurrentRate } from '@/utils/rateCalculator'
 import { ConnectButton } from '@/components/ConnectButton'
 
 const MIN_USDT_AMOUNT = 5
 
+/*
+ * Official USDT Jetton master on TON mainnet.
+ */
 const TON_USDT_MASTER =
   process.env.NEXT_PUBLIC_TON_USDT_MASTER ||
   'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs'
 
+/*
+ * Your PointSwap receiving wallet.
+ */
 const TON_PAYMENT_WALLET =
   process.env.NEXT_PUBLIC_TON_PAYMENT_WALLET ||
   'UQBulg-JME0aSAoMNQMwNiM0bVHPrphH_df8g2iiNPEbT-6Y'
 
+/*
+ * TON mainnet network ID.
+ */
+const TON_NETWORK = '-239'
+
 const TON_USDT_DECIMALS = 6
 
+/*
+ * Reown's provider typing can vary depending on the installed
+ * AppKit version. We intentionally keep this type minimal.
+ *
+ * The important method is sendTransaction().
+ */
+type TonWalletProvider = {
+  sendTransaction?: (request: {
+    validUntil: number
+    network?: string
+    from?: string
+    items?: Array<{
+      type: 'jetton'
+      master: string
+      destination: string
+      amount: string
+      attachAmount?: string
+      responseDestination?: string
+      forwardAmount?: string
+      forwardPayload?: string
+      queryId?: string
+    }>
+    messages?: Array<{
+      address: string
+      amount: string
+      payload?: string
+      stateInit?: string
+      extraCurrency?: Record<number, string>
+    }>
+  }) => Promise<{
+    boc: string
+    traceId?: string
+  }>
+}
+
+function parseUSDTAmount(value: string): bigint {
+  const normalized = value.trim()
+
+  if (!/^\d+(\.\d{1,6})?$/.test(normalized)) {
+    throw new Error(
+      'Invalid USDT amount. Maximum 6 decimal places are supported.'
+    )
+  }
+
+  const [whole, fraction = ''] = normalized.split('.')
+
+  const paddedFraction = fraction.padEnd(
+    TON_USDT_DECIMALS,
+    '0'
+  )
+
+  return (
+    BigInt(whole) *
+      BigInt(10) ** BigInt(TON_USDT_DECIMALS) +
+    BigInt(paddedFraction)
+  )
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null
+  ) {
+    const value = error as Record<string, unknown>
+
+    if (typeof value.message === 'string') {
+      return value.message
+    }
+
+    if (typeof value.error === 'string') {
+      return value.error
+    }
+  }
+
+  return 'TON payment was cancelled or failed.'
+}
+
 export function SendTONUSDT() {
-  const { address, isConnected } =
-    useAppKitAccount()
+  const {
+    address,
+    isConnected,
+  } = useAppKitAccount()
+
+  const {
+    walletProvider,
+  } =
+    useAppKitProvider<TonWalletProvider>('ton')
 
   const [amount, setAmount] = useState('')
 
@@ -45,7 +148,7 @@ export function SendTONUSDT() {
     useState('')
 
   /*
-   * Update the current rate every second.
+   * Live rate update.
    */
   useEffect(() => {
     const interval = setInterval(() => {
@@ -54,12 +157,11 @@ export function SendTONUSDT() {
       )
     }, 1000)
 
-    return () =>
-      clearInterval(interval)
+    return () => clearInterval(interval)
   }, [])
 
   /*
-   * Preview credits.
+   * Preview calculation.
    */
   const numericAmount = Number(amount)
 
@@ -82,13 +184,7 @@ export function SendTONUSDT() {
     previewBasePoints + previewBonus
 
   /*
-   * Temporary payment handler.
-   *
-   * IMPORTANT:
-   * This does not send USDT yet.
-   * We will replace this with the real
-   * TON Jetton transaction after the UI
-   * has been verified.
+   * Send TON USDT Jetton payment.
    */
   const handleSend = async (
     e: React.FormEvent
@@ -98,6 +194,9 @@ export function SendTONUSDT() {
     setErrorMessage('')
     setSuccessMessage('')
 
+    /*
+     * Wallet validation.
+     */
     if (!isConnected || !address) {
       setErrorMessage(
         'Please connect your TON wallet first.'
@@ -105,6 +204,16 @@ export function SendTONUSDT() {
       return
     }
 
+    if (!walletProvider) {
+      setErrorMessage(
+        'TON wallet provider is not available. Please reconnect your wallet.'
+      )
+      return
+    }
+
+    /*
+     * Amount validation.
+     */
     if (
       !amount ||
       !Number.isFinite(numericAmount) ||
@@ -116,31 +225,334 @@ export function SendTONUSDT() {
       return
     }
 
+    let amountBaseUnits: bigint
+
+    try {
+      amountBaseUnits =
+        parseUSDTAmount(amount)
+    } catch {
+      setErrorMessage(
+        'Please enter a valid USDT amount with up to 6 decimal places.'
+      )
+      return
+    }
+
+    /*
+     * Make sure the wallet provider actually
+     * supports TON Connect sendTransaction.
+     */
+    if (
+      typeof walletProvider.sendTransaction !==
+      'function'
+    ) {
+      setErrorMessage(
+        'Your connected TON wallet does not expose the TON Connect sendTransaction API. Please reconnect using a TON Connect compatible wallet.'
+      )
+      return
+    }
+
     setIsProcessing(true)
     setCurrentStep(3)
 
-    /*
-     * Temporary delay so the UI can be tested.
-     */
-    await new Promise((resolve) =>
-      setTimeout(resolve, 700)
-    )
+    try {
+      /*
+       * -------------------------------------------------------
+       * TON CONNECT JETTON TRANSFER
+       * -------------------------------------------------------
+       *
+       * USDT on TON is a Jetton.
+       *
+       * We therefore DO NOT send:
+       *
+       *   TON_PAYMENT_WALLET
+       *
+       * with the USDT amount directly.
+       *
+       * Instead we ask the TON wallet to perform a
+       * TEP-74 Jetton transfer using the official USDT
+       * Jetton master.
+       *
+       * The wallet resolves the user's USDT Jetton wallet
+       * and creates the appropriate transfer payload.
+       */
 
-    console.log({
-      walletAddress: address,
-      amount: numericAmount,
-      usdtMaster: TON_USDT_MASTER,
-      paymentWallet: TON_PAYMENT_WALLET,
-      decimals: TON_USDT_DECIMALS,
-      referralCode:
-        referralCode.trim().toUpperCase(),
-    })
+      const transaction = {
+        validUntil:
+          Math.floor(Date.now() / 1000) +
+          600,
 
-    setSuccessMessage(
-      'TON payment interface is ready. The secure USDT transaction will be enabled next.'
-    )
+        network: TON_NETWORK,
 
-    setIsProcessing(false)
+        /*
+         * Restrict transaction to the connected
+         * account.
+         */
+        from: address,
+
+        items: [
+          {
+            type: 'jetton' as const,
+
+            /*
+             * USDT Jetton master.
+             */
+            master: TON_USDT_MASTER,
+
+            /*
+             * Your regular TON receiving wallet.
+             *
+             * The wallet handles the Jetton-wallet
+             * resolution.
+             */
+            destination:
+              TON_PAYMENT_WALLET,
+
+            /*
+             * USDT amount in smallest units.
+             *
+             * Example:
+             *
+             * 5 USDT
+             *
+             * becomes:
+             *
+             * 5000000
+             */
+            amount:
+              amountBaseUnits.toString(),
+
+            /*
+             * Amount of TON attached for Jetton
+             * execution/gas.
+             *
+             * 0.05 TON is a conservative value for
+             * this type of transaction.
+             *
+             * Excess is returned according to the
+             * Jetton transfer flow.
+             */
+            attachAmount:
+              '50000000',
+
+            /*
+             * Return excess TON to the connected
+             * wallet.
+             */
+            responseDestination:
+              address,
+
+            /*
+             * Small forward amount so the destination
+             * Jetton wallet can process the transfer.
+             */
+            forwardAmount: '1',
+
+            /*
+             * No extra forward payload.
+             */
+            forwardPayload: '',
+
+            /*
+             * Unique-ish query ID for this payment.
+             */
+            queryId:
+              Date.now().toString(),
+          },
+        ],
+      }
+
+      console.log(
+        '[TON] Sending USDT Jetton transaction:',
+        {
+          sender: address,
+          destination:
+            TON_PAYMENT_WALLET,
+          amount,
+          amountBaseUnits:
+            amountBaseUnits.toString(),
+          master: TON_USDT_MASTER,
+        }
+      )
+
+      /*
+       * Open Trust Wallet / compatible TON wallet
+       * for confirmation.
+       */
+      const result =
+        await walletProvider.sendTransaction(
+          transaction
+        )
+
+      console.log(
+        '[TON] Wallet transaction result:',
+        result
+      )
+
+      /*
+       * TON Connect returns a BoC.
+       */
+      const boc = result?.boc
+
+      if (!boc) {
+        throw new Error(
+          'The TON wallet did not return a transaction BoC.'
+        )
+      }
+
+      /*
+       * -------------------------------------------------------
+       * BACKEND VERIFICATION
+       * -------------------------------------------------------
+       *
+       * IMPORTANT:
+       *
+       * Do NOT award credits merely because the wallet
+       * returned a successful sendTransaction response.
+       *
+       * Your API must verify the actual blockchain
+       * transaction.
+       */
+      const verificationResponse =
+        await fetch(
+          '/api/ton/verify',
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            body: JSON.stringify({
+              walletAddress:
+                address,
+
+              amount,
+
+              amountBaseUnits:
+                amountBaseUnits.toString(),
+
+              referralCode:
+                referralCode
+                  .trim()
+                  .toUpperCase() ||
+                null,
+
+              boc,
+
+              jettonMaster:
+                TON_USDT_MASTER,
+
+              paymentWallet:
+                TON_PAYMENT_WALLET,
+            }),
+          }
+        )
+
+      let verification: {
+        success?: boolean
+        message?: string
+        creditsAwarded?: number
+      } = {}
+
+      try {
+        verification =
+          await verificationResponse.json()
+      } catch {
+        verification = {}
+      }
+
+      if (
+        !verificationResponse.ok ||
+        !verification.success
+      ) {
+        throw new Error(
+          verification.message ||
+            'Transaction was submitted, but blockchain verification is still pending.'
+        )
+      }
+
+      /*
+       * SUCCESS
+       */
+      setSuccessMessage(
+        `Payment verified successfully.\n\n` +
+          `Amount: ${numericAmount.toLocaleString()} USDT\n` +
+          `Credits: ${
+            verification.creditsAwarded?.toLocaleString?.() ??
+            totalPreview.toLocaleString()
+          }\n\n` +
+          `Your transaction has been confirmed on TON.`
+      )
+
+      setAmount('')
+      setReferralCode('')
+      setCurrentStep(3)
+    } catch (error) {
+      console.error(
+        'TON USDT payment error:',
+        error
+      )
+
+      const message =
+        getErrorMessage(error)
+
+      const lowerMessage =
+        message.toLowerCase()
+
+      /*
+       * User rejected transaction.
+       */
+      if (
+        lowerMessage.includes(
+          'reject'
+        ) ||
+        lowerMessage.includes(
+          'cancel'
+        ) ||
+        lowerMessage.includes(
+          'user rejected'
+        ) ||
+        lowerMessage.includes(
+          'user_rejects'
+        ) ||
+        lowerMessage.includes(
+          '300'
+        )
+      ) {
+        setErrorMessage(
+          'Transaction cancelled in your TON wallet.'
+        )
+      } else if (
+        lowerMessage.includes(
+          'not support'
+        ) ||
+        lowerMessage.includes(
+          'method_not_supported'
+        )
+      ) {
+        setErrorMessage(
+          'This TON wallet does not support Jetton transfers through the current connection. Please reconnect your TON wallet.'
+        )
+      } else if (
+        lowerMessage.includes(
+          'insufficient'
+        ) ||
+        lowerMessage.includes(
+          'balance'
+        )
+      ) {
+        setErrorMessage(
+          'Insufficient balance. Make sure you have enough TON for network fees and enough USDT on TON for the purchase.'
+        )
+      } else {
+        setErrorMessage(message)
+      }
+
+      setCurrentStep(2)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const isBusy = isProcessing
@@ -153,7 +565,6 @@ export function SendTONUSDT() {
         margin: '0 auto',
       }}
     >
-      {/* Header */}
       <div className="text-center mb-lg">
         <span
           style={{
@@ -193,11 +604,11 @@ export function SendTONUSDT() {
           }}
         >
           Contribute with USDT on the
-          TON network through Tonkeeper.
+          TON network through a
+          compatible TON wallet.
         </p>
       </div>
 
-      {/* Step Indicator */}
       <div className="step-indicator">
         <div
           className={`step ${
@@ -248,7 +659,6 @@ export function SendTONUSDT() {
         </div>
       </div>
 
-      {/* Success */}
       {successMessage && (
         <div
           style={{
@@ -264,15 +674,12 @@ export function SendTONUSDT() {
               '1px solid rgba(0, 212, 170, 0.3)',
             color: 'var(--primary)',
             fontWeight: 500,
-            boxShadow:
-              '0 4px 20px rgba(0, 212, 170, 0.1)',
           }}
         >
           {successMessage}
         </div>
       )}
 
-      {/* Error */}
       {errorMessage && (
         <div
           style={{
@@ -296,7 +703,6 @@ export function SendTONUSDT() {
       )}
 
       <form onSubmit={handleSend}>
-        {/* Network */}
         <div className="form-group">
           <label>
             Active Settlement Network
@@ -346,7 +752,7 @@ export function SendTONUSDT() {
                     'uppercase',
                 }}
               >
-                Tonkeeper • Mainnet
+                TON Mainnet
               </div>
             </div>
           </div>
@@ -374,7 +780,6 @@ export function SendTONUSDT() {
           )}
         </div>
 
-        {/* Wallet */}
         {isConnected &&
           address && (
             <div className="form-group">
@@ -407,7 +812,6 @@ export function SendTONUSDT() {
             </div>
           )}
 
-        {/* Amount */}
         <div className="form-group">
           <label>
             Contribution Amount (USDT)
@@ -420,7 +824,7 @@ export function SendTONUSDT() {
           >
             <input
               type="number"
-              step="0.01"
+              step="0.000001"
               min={MIN_USDT_AMOUNT}
               placeholder={`Min ${MIN_USDT_AMOUNT} USDT`}
               value={amount}
@@ -450,7 +854,8 @@ export function SendTONUSDT() {
 
             <div
               style={{
-                position: 'absolute',
+                position:
+                  'absolute',
                 right: '16px',
                 top: '50%',
                 transform:
@@ -469,7 +874,6 @@ export function SendTONUSDT() {
           </div>
         </div>
 
-        {/* Referral */}
         <div className="form-group">
           <label>
             Referral Code (Optional)
@@ -496,7 +900,6 @@ export function SendTONUSDT() {
           />
         </div>
 
-        {/* Preview */}
         {amount &&
           Number(amount) >=
             MIN_USDT_AMOUNT && (
@@ -510,8 +913,6 @@ export function SendTONUSDT() {
                   'var(--radius-md)',
                 padding: '18px',
                 marginTop: '4px',
-                boxShadow:
-                  'inset 0 1px 0 rgba(255, 255, 255, 0.05)',
               }}
             >
               <div
@@ -650,8 +1051,6 @@ export function SendTONUSDT() {
                       '1.2rem',
                     color:
                       'var(--primary)',
-                    textShadow:
-                      '0 0 20px rgba(0,212,170,0.3)',
                   }}
                 >
                   {totalPreview.toLocaleString()}
@@ -660,14 +1059,12 @@ export function SendTONUSDT() {
             </div>
           )}
 
-        {/* Connect */}
         {!isConnected && (
           <div className="text-center mt-md">
             <ConnectButton />
           </div>
         )}
 
-        {/* Submit */}
         <button
           type="submit"
           disabled={
@@ -691,11 +1088,10 @@ export function SendTONUSDT() {
           {!isConnected
             ? 'Connect TON Wallet to Participate'
             : isProcessing
-            ? 'Preparing TON Payment...'
+            ? 'Confirming in TON Wallet...'
             : 'Contribute with TON USDT 🚀'}
         </button>
 
-        {/* Security note */}
         <div
           className="text-muted text-center"
           style={{
@@ -714,3 +1110,4 @@ export function SendTONUSDT() {
     </div>
   )
 }
+

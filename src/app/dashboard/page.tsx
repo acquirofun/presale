@@ -28,7 +28,6 @@ export default function Home() {
         <StatsDashboard />
 
 
-        
 
         {/* User Credits (still show for detailed view) */}
         
