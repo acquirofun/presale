@@ -112,7 +112,7 @@ export default function Home() {
               color: "white",
             }}
         >
-         <a href="/home">No, Thanks. I don't want this</a>
+         <a href="/home">No, Thanks. I don&apos;t want this</a>
         </button>
       </section>
     </main>
