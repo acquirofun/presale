@@ -374,7 +374,7 @@ export function SendUSDC() {
                * Referrer receives 20% of the base points.
                */
               const referrerBonus =
-                Math.floor(basePoints * 0.2)
+                Math.floor(basePoints * 0.15)
 
               if (referrerBonus > 0) {
                 /*
@@ -706,7 +706,7 @@ export function SendUSDC() {
        * referral code.
        */
       const bonusPoints = referrerWallet
-        ? Math.floor(basePoints * 0.1)
+        ? Math.floor(basePoints * 0.15)
         : 0
 
       /*
@@ -860,7 +860,7 @@ export function SendUSDC() {
   const previewBonus =
     referralCode.trim()
       ? Math.floor(
-          previewBasePoints * 0.1
+          previewBasePoints * 0.15
         )
       : 0
 

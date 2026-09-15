@@ -4,12 +4,16 @@
 import { useState, useEffect, type ChangeEvent } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    'https://kifydthslaqeqmohvetb.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_KEY ||
-    'sb_publishable_gPldRZjoctXxbEuEmy1GjA_EjzSLjqk'
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_KEY'
+  )
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 // ==========================================
 // TOKENOMICS CONFIGURATION

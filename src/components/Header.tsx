@@ -81,7 +81,7 @@ export function Header() {
           <div className="brand-logo">
             <Image
               src="/favicon.jpeg"
-              alt="PointSwap"
+              alt="SwapCredits"
               width={42}
               height={42}
               priority
@@ -89,7 +89,7 @@ export function Header() {
           </div>
 
           <div className="brand-text">
-            <span className="brand-name">PointSwap</span>
+            <span className="brand-name">SwapCredits</span>
             <span className="brand-tagline">Web3 Presale</span>
           </div>
         </a>
@@ -289,7 +289,6 @@ export function Header() {
           <span className="mobile-nav-icon">↗</span>
           Contact
         </a>
-
         
         
       </div>

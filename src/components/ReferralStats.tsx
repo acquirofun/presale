@@ -6,13 +6,14 @@ import { useAccount } from 'wagmi'
 import { useAppKitAccount } from '@reown/appkit/react'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  'https://kifydthslaqeqmohvetb.supabase.co'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY
 
-const supabaseKey =
-  process.env.NEXT_PUBLIC_SUPABASE_KEY ||
-  'sb_publishable_gPldRZjoctXxbEuEmy1GjA_EjzSLjqk'
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_KEY'
+  )
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 

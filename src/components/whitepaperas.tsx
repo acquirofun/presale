@@ -66,7 +66,7 @@ export function Whitepaper() {
           </div>
 
           <h1 style={{ fontSize: '3.5rem', fontWeight: '900', color: '#fff', margin: '0 0 1rem 0' }}>
-            Point<span style={{ color: '#00ff88' }}>Swap (SWC)</span>
+           <span style={{ color: '#00ff88' }}>SwapCredits (SWC)</span>
           </h1>
           <p style={{ color: '#a1a1aa', fontSize: '1.1rem', maxWidth: '700px', lineHeight: '1.6' }}>
             An advanced blockchain-based token project designed around a transparent, dynamic supply model and structured token distribution framework.

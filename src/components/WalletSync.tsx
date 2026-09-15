@@ -5,10 +5,16 @@ import { useAppKitAccount } from '@reown/appkit/react'
 import { useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || "https://kifydthslaqeqmohvetb.supabase.co", 
-  process.env.SUPABASE_KEY || "sb_publishable_gPldRZjoctXxbEuEmy1GjA_EjzSLjqk"
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_KEY'
+  )
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export default function WalletSync() {
   const { address, isConnected, caipAddress } = useAppKitAccount()

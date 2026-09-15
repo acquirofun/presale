@@ -246,10 +246,10 @@ export function ReferralCodeGenerator() {
 
           <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
             <p style={{ marginBottom: 'var(--spacing-xs)' }}>
-              <strong>Share this code with friends and earn 20% of their purchase in points!</strong>
+              <strong>Share this code with friends and earn 15% of their purchase in points!</strong>
             </p>
             <p style={{ marginBottom: 'var(--spacing-xs)' }}>
-              • Your friends get 10% bonus points when they use your code
+              • Your friends get 15% bonus points when they use your code
             </p>
             <p>
               • Track your referrals and earnings in the stats dashboard

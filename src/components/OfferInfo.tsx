@@ -73,7 +73,7 @@ export function OfferInfo() {
           </h2>
 
           <p className="offer-subtitle">
-            Buy points at the current presale rate before it decreases.
+            Buy Credits at the current presale rate before it decreases.
           </p>
         </div>
 
@@ -109,7 +109,7 @@ export function OfferInfo() {
           </div>
 
           <div className="rate-unit">
-            POINTS <span>PER USDC</span>
+            Credits <span>PER USDC</span>
           </div>
 
           <div className="rate-description">
@@ -150,7 +150,7 @@ export function OfferInfo() {
           </div>
 
           <div className="rate-unit">
-            POINTS <span>PER USDC</span>
+            Credits <span>PER USDC</span>
           </div>
 
           <div className="rate-description">

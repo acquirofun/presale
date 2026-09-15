@@ -5,22 +5,22 @@ import ContextProvider from "@/context";
 import WalletSync from "@/components/WalletSync";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://presaler1.vercel.app/"),
+  metadataBase: new URL("https://www.swapcredits.xyz"),
 
   title: {
-    default: "Pointswap | Token Presale",
-    template: "%s | Pointswap",
+    default: "SwapCredits | Token Presale",
+    template: "%s | SwapCredits",
   },
 
   description:
-    "Join the Pointswap token presale, connect your wallet, and track your token allocation.",
+    "Join the SwapCredits token presale, connect your wallet, and track your token allocation.",
 
-  applicationName: "Pointswap",
+  applicationName: "SwapCredits",
 
   keywords: [
-    "Pointswap",
-    "Pointswap Token",
-    "Pointswap Presale",
+    "SwapCredits",
+    "SwapCredits Token",
+    "SwapCredits Presale",
     "crypto presale",
     "token presale",
     "Web3",
@@ -29,12 +29,12 @@ export const metadata: Metadata = {
 
   authors: [
     {
-      name: "Pointswap",
+      name: "SwapCredits",
     },
   ],
 
-  creator: "Pointswap",
-  publisher: "Pointswap",
+  creator: "SwapCredits",
+  publisher: "SwapCredits",
 
   icons: {
     icon: "/favicon.jpeg",
@@ -44,26 +44,26 @@ export const metadata: Metadata = {
 
   openGraph: {
     type: "website",
-    siteName: "Pointswap",
-    title: "Pointswap | Token Presale",
+    siteName: "SwapCredits",
+    title: "SwapCredits | Token Presale",
     description:
-      "Join the Pointswap token presale, connect your wallet, and track your token allocation.",
-    url: "https://presaler1.vercel.app/",
+      "Join the SwapCredits token presale, connect your wallet, and track your token allocation.",
+    url: "https://www.swapcredits.xyz",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Pointswap Token Presale",
+        alt: "SwapCredits Token Presale",
       },
     ],
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "Pointswap | Token Presale",
+    title: "SwapCredits | Token Presale",
     description:
-      "Join the Pointswap token presale and track your token allocation.",
+      "Join the SwapCredits token presale and track your token allocation.",
     images: ["/og-image.png"],
   },
 

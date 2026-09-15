@@ -4,10 +4,16 @@ import { useState, useEffect } from 'react'
 import { useAppKitAccount } from '@reown/appkit/react'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || 'https://kifydthslaqeqmohvetb.supabase.co',
-  process.env.SUPABASE_KEY || 'sb_publishable_gPldRZjoctXxbEuEmy1GjA_EjzSLjqk'
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_KEY'
+  )
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export function ValueDisplay() {
   const { isConnected, address } = useAppKitAccount()
@@ -142,7 +148,7 @@ export function ValueDisplay() {
           {(listingValue / 0.04).toFixed(2)}
         </div>
         <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-          Probable Token Allocation
+          Probable SWC (SwapCredits) Allocation
         </div>
       </div>
 
