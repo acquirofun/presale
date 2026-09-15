@@ -106,7 +106,7 @@ export default async function RootLayout({
             <input
               autoComplete="off"
               type="checkbox"
-              id="aadsstickymu2y7js5"
+              id="aadsstickymu2ye5u3"
               hidden
             />
 
@@ -125,7 +125,7 @@ export default async function RootLayout({
                 }}
               >
                 <label
-                  htmlFor="aadsstickymu2y7js5"
+                  htmlFor="aadsstickymu2ye5u3"
                   style={{
                     bottom: "24px",
                     margin: "0 auto",
@@ -181,7 +181,7 @@ export default async function RootLayout({
 
               <style>
                 {`
-                  #aadsstickymu2y7js5:checked + div {
+                  #aadsstickymu2ye5u3:checked + div {
                     display: none;
                   }
                 `}
