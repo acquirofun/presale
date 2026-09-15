@@ -163,8 +163,7 @@ export function UserCredits() {
 
           <h3>My Credits</h3>
 
-          <p>
-            Earn credits by sending USDC
+          <p style={{color: "red"}}>See Dashboard for Estimated Profit
           </p>
         </div>
       </div>

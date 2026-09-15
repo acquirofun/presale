@@ -13,9 +13,16 @@ export default function Home() {
   return (
     <div className="pages">
       <Header />
+
+      
       
       <div className="container" style={{ marginTop: 'var(--spacing-xl)' }}>
         {/* Hero Section with Countdown */}
+
+        <div className="card mb-lg">
+          <UserCreditsWithReferral />
+        </div>
+
         <div className="card mb-lg">
           <CountdownTimer />
         </div>
@@ -38,10 +45,6 @@ export default function Home() {
 
         {/* Stats Dashboard */}
         <StatsDashboard />
-
-        <div className="card mb-lg">
-          <UserCreditsWithReferral />
-        </div>
 
       </div>
     </div>
