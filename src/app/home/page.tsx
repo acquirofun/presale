@@ -31,7 +31,7 @@ export default function Home() {
         {/* Send USDC Widget */}
         <div className="card mb-lg" id="buy-usdc-widget">
           <SendUSDC />
-          // <SendTONUSDT />
+
         </div>
 
         {/* User Credits with Referral Link */}
