@@ -106,28 +106,32 @@ export default async function RootLayout({
             <input
               autoComplete="off"
               type="checkbox"
-              id="aadsstickymu2x7ize"
+              id="aadsstickymu2y7js5"
               hidden
             />
 
             <div style={{ paddingTop: 0, paddingBottom: 0 }}>
               <div
                 style={{
-                  width: "200px",
-                  height: "200px",
+                  width: "15%",
+                  height: "100%",
                   position: "fixed",
                   textAlign: "center",
                   fontSize: 0,
                   top: "50%",
                   transform: "translateY(-50%)",
                   right: 0,
+                  minWidth: "100px",
                 }}
               >
                 <label
-                  htmlFor="aadsstickymu2x7ize"
+                  htmlFor="aadsstickymu2y7js5"
                   style={{
-                    top: "-24px",
+                    bottom: "24px",
+                    margin: "0 auto",
+                    right: 0,
                     left: 0,
+                    maxWidth: "24px",
                     position: "absolute",
                     borderRadius: "4px",
                     background: "rgba(248, 248, 249, 0.70)",
@@ -150,10 +154,11 @@ export default async function RootLayout({
                 <div
                   id="frame"
                   style={{
-                    width: "200px",
+                    width: "100%",
                     margin: "auto",
+                    position: "relative",
                     zIndex: 99998,
-                    height: "auto",
+                    height: "100%",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
@@ -161,12 +166,12 @@ export default async function RootLayout({
                 >
                   <iframe
                     data-aa="2455447"
-                    src="//ad.a-ads.com/2455447/?size=200x200"
+                    src="//acceptable.a-ads.com/2455447/?size=Adaptive"
                     style={{
                       border: 0,
                       padding: 0,
-                      width: "200px",
-                      height: "200px",
+                      width: "70%",
+                      height: "70%",
                       overflow: "hidden",
                       margin: "0 auto",
                     }}
@@ -176,7 +181,7 @@ export default async function RootLayout({
 
               <style>
                 {`
-                  #aadsstickymu2x7ize:checked + div {
+                  #aadsstickymu2y7js5:checked + div {
                     display: none;
                   }
                 `}
